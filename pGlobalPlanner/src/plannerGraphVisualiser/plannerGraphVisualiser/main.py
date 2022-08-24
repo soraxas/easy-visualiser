@@ -1,15 +1,11 @@
-from ._impl import update
 from vispy import app, scene, color
 import argparse
 
 from vispy.color import get_colormap, Color
 from .graph_visualiser import GraphVisualiser
 
-args = None
 
-
-def run():
-    global args
+def parse_args():
     parser = argparse.ArgumentParser(description="pGlobalPlannerVisualiser.")
     parser.add_argument(
         "datapath",
@@ -23,8 +19,16 @@ def run():
     parser.add_argument("--min", type=float)
     parser.add_argument("-m", "--max", type=float)
     parser.add_argument("-c", "--cost-index", type=int)
+    parser.add_argument("-z", "--z-scale-factor", type=float, default=40)
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+args = parse_args()
+
+
+def run():
+    global args
 
     # Display the data
     canvas = scene.SceneCanvas(
@@ -67,9 +71,12 @@ def run():
     # vis = GraphVisualiser(cbar_widget, 0)
     # vis2 = GraphVisualiser(cbar_widget, 1, np.array([-300000, 0, 0]))
 
-    timer = app.Timer(interval=1, connect=update, start=True)
 
-    update(None)
+    from ._impl import update
+
+    timer = app.Timer(interval=1, connect=lambda ev: update(args, ev), start=True)
+
+    update(args, None)
     app.run()
 
 

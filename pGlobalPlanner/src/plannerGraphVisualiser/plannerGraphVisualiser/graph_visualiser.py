@@ -21,15 +21,18 @@ class GraphVisualiser:
         self.start_markers = None
         self.goal_markers = None
 
+        self.had_set_range = False
+
     def update(self):
 
         # print(pos.shape, edges.shape, colors.shape)
-        pos, edges, solution_path, costs = get_latest_pdata(self.cost_idx)
+        pos, edges, solution_path, costs = get_latest_pdata(self.args, self.cost_idx)
         # print(pos.shape, edges.shape, colors.shape)
 
         # colors = colormap.map(costs)
         if self.offset is not None:
             pos += self.offset
+
 
         #################################################
         #################################################
@@ -42,12 +45,15 @@ class GraphVisualiser:
             _max = costs.max()
 
         _min = 0
-        # _max = 20000000
-        # _max = 5000000
         if self.args.min is not None:
             _min = self.args.min
         if self.args.max is not None:
             _max = self.args.max
+
+        if np.isnan(_max):
+            _max = np.nanmax(costs)
+        if np.isnan(_min):
+            _min = np.nanmax(costs)
 
         costs = np.clip(costs, _min, _max)
         costs = (costs - _min) / (_max - _min)
@@ -61,8 +67,9 @@ class GraphVisualiser:
         self.args.cbar_widget.clim = (_min, _max)
         # markers.set_data(pos=pos, face_color=colors)
 
-        if last_modify_time is None:
+        if not self.had_set_range:
             self.args.view.camera.set_range()
+            self.had_set_range = True
 
         # if len(solution_path) > 0:
         if self.sol_lines is None:
@@ -72,7 +79,7 @@ class GraphVisualiser:
                 method="gl",
                 # method='agg',
                 parent=self.args.view.scene,
-                width=50,
+                width=5,
                 color="red",
             )
 
@@ -83,7 +90,7 @@ class GraphVisualiser:
                     method="gl",
                     # method='agg',
                     parent=self.args.view.scene,
-                    width=50,
+                    width=5,
                     color="red",
                 )
 
