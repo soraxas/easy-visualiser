@@ -20,6 +20,8 @@ def parse_args():
     parser.add_argument("-m", "--max", type=float)
     parser.add_argument("-c", "--cost-index", type=int)
     parser.add_argument("-z", "--z-scale-factor", type=float, default=40)
+    parser.add_argument("--principle-axis-z-offset", type=float, default=1000)
+    parser.add_argument("--principle-axis-length", type=float, default=100000)
 
     return parser.parse_args()
 
@@ -70,7 +72,6 @@ def run():
     )
     # vis = GraphVisualiser(cbar_widget, 0)
     # vis2 = GraphVisualiser(cbar_widget, 1, np.array([-300000, 0, 0]))
-
 
     from ._impl import update
 

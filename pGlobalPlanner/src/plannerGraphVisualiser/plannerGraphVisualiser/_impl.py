@@ -13,8 +13,10 @@ def mean_confidence_interval(data, confidence=0.95):
     h = se * scipy.stats.t.ppf((1 + confidence) / 2.0, n - 1)
     return m, m - h, m + h
 
+
 start_markers = None
 goal_markers = None
+
 
 def get_latest_pdata(args, cost_idx="all"):
     pdata = np.load(args.datapath)
@@ -46,7 +48,6 @@ def get_latest_pdata(args, cost_idx="all"):
         _target_costs = pdata["vertices_costs"][:, cost_idx].copy()
 
     global start_markers, goal_markers
-
 
     # if start_markers is None:
     #     start_coor = []

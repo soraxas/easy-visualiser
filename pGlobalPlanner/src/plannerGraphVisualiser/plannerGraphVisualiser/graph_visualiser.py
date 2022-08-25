@@ -2,6 +2,7 @@ from vispy import app, scene, color
 import numpy as np
 import scipy
 from vispy.visuals.colorbar import ColorBarVisual
+from vispy.scene.visuals import XYZAxis
 from ._impl import *
 
 
@@ -20,6 +21,7 @@ class GraphVisualiser:
 
         self.start_markers = None
         self.goal_markers = None
+        self.axis_visual = None
 
         self.had_set_range = False
 
@@ -32,7 +34,6 @@ class GraphVisualiser:
         # colors = colormap.map(costs)
         if self.offset is not None:
             pos += self.offset
-
 
         #################################################
         #################################################
@@ -70,6 +71,25 @@ class GraphVisualiser:
         if not self.had_set_range:
             self.args.view.camera.set_range()
             self.had_set_range = True
+
+            axis_len = 100
+
+            _pos = np.array(
+                [[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]],
+                dtype=np.float,
+            )
+
+            _pos *= self.args.principle_axis_length
+
+            _pos += pos.min(0)
+
+            _pos[:, 2] -= self.args.principle_axis_z_offset
+
+            self.axis_visual = XYZAxis(
+                pos=_pos,
+                parent=self.args.view.scene,
+                width=5,
+            )
 
         # if len(solution_path) > 0:
         if self.sol_lines is None:
