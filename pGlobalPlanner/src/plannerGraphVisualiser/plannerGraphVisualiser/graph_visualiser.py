@@ -52,9 +52,9 @@ class GraphVisualiser:
             _max = self.args.max
 
         if np.isnan(_max):
-            _max = np.nanmax(costs)
+            _max = np.nanmax(costs[costs != np.inf])
         if np.isnan(_min):
-            _min = np.nanmax(costs)
+            _min = np.nanmin(costs[costs != -np.inf])
 
         costs = np.clip(costs, _min, _max)
         costs = (costs - _min) / (_max - _min)

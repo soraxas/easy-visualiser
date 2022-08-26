@@ -49,22 +49,22 @@ def get_latest_pdata(args, cost_idx="all"):
 
     global start_markers, goal_markers
 
-    # if start_markers is None:
-    #     start_coor = []
-    #     for idx in pdata["start_vertices_id"]:
-    #         start_coor.append(pos[idx])
-    #     start_coor = np.array(start_coor)
-    #
-    #     goal_coor = []
-    #     for idx in pdata["goal_vertices_id"]:
-    #         goal_coor.append(pos[idx])
-    #     goal_coor = np.array(goal_coor)
-    #     start_markers = scene.Markers(
-    #         pos=start_coor, face_color="green", symbol="o", parent=args.view.scene, size=20
-    #     )
-    #     goal_markers = scene.Markers(
-    #         pos=goal_coor, face_color="red", symbol="o", parent=args.view.scene, size=20
-    #     )
+    if start_markers is None:
+        start_coor = []
+        for idx in pdata["start_vertices_id"]:
+            start_coor.append(pos[idx])
+        start_coor = np.array(start_coor)
+
+        goal_coor = []
+        for idx in pdata["goal_vertices_id"]:
+            goal_coor.append(pos[idx])
+        goal_coor = np.array(goal_coor)
+        start_markers = scene.Markers(
+            pos=start_coor, face_color="green", symbol="o", parent=args.view.scene, size=20
+        )
+        goal_markers = scene.Markers(
+            pos=goal_coor, face_color="red", symbol="o", parent=args.view.scene, size=20
+        )
     # else:
     #     start_markers.set_data(pos=start_coor)
     #     goal_markers.set_data(pos=goal_coor)
