@@ -60,7 +60,11 @@ def get_latest_pdata(args, cost_idx="all"):
             goal_coor.append(pos[idx])
         goal_coor = np.array(goal_coor)
         start_markers = scene.Markers(
-            pos=start_coor, face_color="green", symbol="o", parent=args.view.scene, size=20
+            pos=start_coor,
+            face_color="green",
+            symbol="o",
+            parent=args.view.scene,
+            size=20,
         )
         goal_markers = scene.Markers(
             pos=goal_coor, face_color="red", symbol="o", parent=args.view.scene, size=20
