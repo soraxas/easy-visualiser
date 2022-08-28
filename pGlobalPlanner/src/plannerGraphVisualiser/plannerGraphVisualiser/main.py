@@ -16,6 +16,7 @@ def parse_args():
     )
     parser.add_argument("--colormap", default="plasma")
     parser.add_argument("--no-extra-sol", dest="extra_sol", action="store_false")
+    parser.add_argument("--no-ci", dest="use_ci", help="use 95 confident interval for setting cost limit (to avoid being overwhelmed by extremely high cost value)", action="store_false")
     parser.add_argument("--min", type=float)
     parser.add_argument("-m", "--max", type=float)
     parser.add_argument("-c", "--cost-index", type=int)

@@ -37,9 +37,8 @@ class GraphVisualiser:
 
         #################################################
         #################################################
-        use_ci = True
-        use_ci = False
-        if use_ci:
+
+        if self.args.use_ci:
             _mean, _min, _max = mean_confidence_interval(costs)
         else:
             _min = costs.min()
@@ -58,6 +57,7 @@ class GraphVisualiser:
 
         costs = np.clip(costs, _min, _max)
         costs = (costs - _min) / (_max - _min)
+
         # costs = costs - _min
         #################################################
         #################################################
