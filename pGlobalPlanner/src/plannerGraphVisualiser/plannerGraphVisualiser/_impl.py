@@ -2,6 +2,7 @@ from vispy import scene
 
 import numpy as np
 import scipy
+import scipy.stats
 
 import os
 
