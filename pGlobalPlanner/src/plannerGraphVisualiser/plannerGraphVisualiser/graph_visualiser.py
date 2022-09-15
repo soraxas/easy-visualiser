@@ -25,10 +25,23 @@ class GraphVisualiser:
 
         self.had_set_range = False
 
+        self.z_scaler = Zscaler(z_scale_factor=self.args.z_scale_factor)
+
+        self.keepout_zone_mesh = scene.Mesh(
+            # vertices=[],
+            # faces=[],
+            parent=self.args.view.scene,
+            # color=(.5, .5, .5),
+            color=(0.5, 0.5, 0.5, 0.7),
+        )
+        self.keepout_zone_mesh.set_gl_state("translucent")
+
     def update(self):
 
         # print(pos.shape, edges.shape, colors.shape)
-        pos, edges, solution_path, costs = get_latest_pdata(self.args, self.cost_idx)
+        pos, edges, solution_path, costs = get_latest_pdata(
+            self.args, self.z_scaler, self.cost_idx
+        )
         # print(pos.shape, edges.shape, colors.shape)
 
         # colors = colormap.map(costs)
@@ -127,3 +140,32 @@ class GraphVisualiser:
             if len(solution_path) > 0:
                 fake_solution_path[:, -1] -= 200000
             self.fake_sol_lines.set_data(pos=fake_solution_path)
+
+        # vertices = np.array([
+        #     (0, 0, 0), (1, 0, 1), (1, 1, 1), (0, 1, 0),
+        #     (0, 0, 1), (0, 1, 1), (1, 1, 0), (1, 0, 0),
+        #     ])
+        # faces = np.array([(0, 1, 2), (0, 2, 3),
+        #     (0, 4, 5)
+        # ])
+
+        vertices = []
+        faces = []
+
+        keepout_zones = get_keepout_zones(self.args)
+
+        for keepout_zone in keepout_zones:
+            # start new index for faces according to current vertices list length
+            _faces = np.array(keepout_zone.faces) + len(vertices)
+
+            vertices.extend(keepout_zone.vertices)
+            faces.extend(_faces)
+
+        vertices = np.array(vertices)
+        _faces = np.array(_faces)
+        self.z_scaler(vertices)
+
+        self.keepout_zone_mesh.set_data(
+            vertices=vertices,
+            faces=faces,
+        )

@@ -19,7 +19,19 @@ start_markers = None
 goal_markers = None
 
 
-def get_latest_pdata(args, cost_idx="all"):
+class Zscaler:
+    def __init__(self, z_scale_factor) -> None:
+        self.min = 0
+        self.z_scale_factor = z_scale_factor
+
+    def set_min(self, min):
+        self.min = min
+
+    def __call__(self, array):
+        array[:, 2] = (array[:, 2] - self.min) * self.z_scale_factor + self.min
+
+
+def get_latest_pdata(args, z_scaler: Zscaler, cost_idx="all"):
     pdata = np.load(args.datapath)
     # pdata["vertices_id"]
     # pdata["edges"]
@@ -32,14 +44,13 @@ def get_latest_pdata(args, cost_idx="all"):
     solution_path = pdata["solution_coordinate"]
 
     _min = pos[:, 2].min()
+    z_scaler.set_min(_min)
 
     # apply z scale
-    def apply_z_scale(array):
-        array[:, 2] = (array[:, 2] - _min) * args.z_scale_factor + _min
 
-    apply_z_scale(pos)
+    z_scaler(pos)
     if len(solution_path) > 0:
-        apply_z_scale(solution_path)
+        z_scaler(solution_path)
 
     edges = pdata["edges"]
 
@@ -80,6 +91,59 @@ def get_latest_pdata(args, cost_idx="all"):
     # colors[:,0] = (_target_costs - _min) / (_max - _min)
 
     return pos, edges, solution_path, _target_costs  # , _min, _max
+
+
+class Wall:
+    def __init__(self, xy_start, xy_goal, depth):
+        self.xy_start = xy_start
+        self.xy_goal = xy_goal
+        self.depth = depth
+        self.start_idx = 0
+
+    def get_vertices(self):
+        return (
+            (*self.xy_start, 0),
+            (*self.xy_start, -self.depth),
+            (*self.xy_goal, 0),
+            (*self.xy_goal, -self.depth),
+        )
+
+    def at(self, idx):
+        return self.start_idx + idx
+
+    def get_faces(self):
+        return (self.at(0), self.at(1), self.at(2)), (
+            self.at(1),
+            self.at(2),
+            self.at(3),
+        )
+
+
+class KeepoutZone:
+    def __init__(self, depth, points) -> None:
+        self.depth = depth
+        self.walls = []
+        self.vertices = []
+        self.faces = []
+
+        for i in range(len(points)):
+
+            w = Wall(points[i], points[(i + 1) % len(points)], depth=self.depth)
+            w.start_idx = len(self.vertices)
+            self.vertices.extend(w.get_vertices())
+            self.faces.extend(w.get_faces())
+            self.walls.append(w)
+
+
+def get_keepout_zones(args):
+    pdata = np.load(args.datapath)
+
+    return [
+        KeepoutZone(
+            depth=pdata["keepout_zones_depths"][i], points=pdata[f"keepout_zones_{i}"]
+        )
+        for i in range(len(pdata["keepout_zones_depths"]))
+    ]
 
 
 # bar.canvas = view.scene
