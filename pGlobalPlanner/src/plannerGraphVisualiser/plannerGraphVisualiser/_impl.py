@@ -134,6 +134,9 @@ class KeepoutZone:
             self.faces.extend(w.get_faces())
             self.walls.append(w)
 
+    def __repr__(self) -> str:
+        return f"{np.array([w.xy_start for w in self.walls])}"
+
 
 def get_keepout_zones(args):
     pdata = np.load(args.datapath)

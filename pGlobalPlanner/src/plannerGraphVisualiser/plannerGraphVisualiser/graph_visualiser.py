@@ -1,3 +1,5 @@
+import zipfile
+
 from vispy import app, scene, color
 import numpy as np
 import scipy
@@ -133,7 +135,8 @@ class GraphVisualiser:
             # _duplicated_solution_path[:solution_path.shape[0], 2] += 100000
 
             # self.sol_lines.set_data(pos=_duplicated_solution_path)
-        self.sol_lines.set_data(pos=solution_path)
+        if len(solution_path) > 0:
+            self.sol_lines.set_data(pos=solution_path)
 
         if self.args.extra_sol:
             fake_solution_path = solution_path.copy()
@@ -152,7 +155,12 @@ class GraphVisualiser:
         vertices = []
         faces = []
 
-        keepout_zones = get_keepout_zones(self.args)
+        try:
+            keepout_zones = get_keepout_zones(self.args)
+        except zipfile.BadZipFile as e:
+            print(e)
+            keepout_zones = []
+
 
         for keepout_zone in keepout_zones:
             # start new index for faces according to current vertices list length
@@ -160,12 +168,12 @@ class GraphVisualiser:
 
             vertices.extend(keepout_zone.vertices)
             faces.extend(_faces)
+        if len(keepout_zones) > 0:
+            vertices = np.array(vertices)
+            _faces = np.array(_faces)
+            self.z_scaler(vertices)
 
-        vertices = np.array(vertices)
-        _faces = np.array(_faces)
-        self.z_scaler(vertices)
-
-        self.keepout_zone_mesh.set_data(
-            vertices=vertices,
-            faces=faces,
-        )
+            self.keepout_zone_mesh.set_data(
+                vertices=vertices,
+                faces=np.array(faces),
+            )
