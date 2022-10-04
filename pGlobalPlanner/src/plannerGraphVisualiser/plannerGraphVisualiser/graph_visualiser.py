@@ -7,6 +7,31 @@ from vispy.visuals.colorbar import ColorBarVisual
 from vispy.scene.visuals import XYZAxis
 from ._impl import *
 
+DUMMY_LINE = np.array([[0, 0, 0], [0, 0.1, 0]])
+
+
+class SolutionLine:
+    def __init__(self, _scene, offset=None):
+        self.path = None
+        self.offset = offset
+        self.line_visual = scene.Line(
+            connect="strip",
+            antialias=False,
+            method="gl",
+            # method='agg',
+            parent=_scene,
+            width=5,
+            color="red",
+        )
+
+    def set_path(self, _path):
+        if len(_path) <= 0:
+            _path = DUMMY_LINE
+        else:
+            if self.offset:
+                _path[:, -1] -= self.offset
+        self.line_visual.set_data(pos=_path)
+
 
 class GraphVisualiser:
     def __init__(self, args, cost_idx="all", offset=None):
@@ -18,8 +43,9 @@ class GraphVisualiser:
 
         self.offset = offset
 
-        self.sol_lines = None
-        self.fake_sol_lines = None
+        self.sol_lines = SolutionLine(self.args.view.scene)
+        if self.args.extra_sol:
+            self.fake_sol_lines = SolutionLine(self.args.view.scene, offset=200000)
 
         self.start_markers = None
         self.goal_markers = None
@@ -106,51 +132,17 @@ class GraphVisualiser:
                 width=5,
             )
 
-        # if len(solution_path) > 0:
-        if self.sol_lines is None:
-            self.sol_lines = scene.Line(
-                connect="strip",
-                antialias=False,
-                method="gl",
-                # method='agg',
-                parent=self.args.view.scene,
-                width=5,
-                color="red",
-            )
-
-            if self.args.extra_sol:
-                self.fake_sol_lines = scene.Line(
-                    connect="strip",
-                    antialias=False,
-                    method="gl",
-                    # method='agg',
-                    parent=self.args.view.scene,
-                    width=5,
-                    color="red",
-                )
-
             # _duplicated_solution_path = np.empty((solution_path.shape[0] * 2, solution_path.shape[1]), dtype=solution_path.dtype)
             # _duplicated_solution_path[solution_path.shape[0]:, :] = solution_path
             # _duplicated_solution_path[:solution_path.shape[0], :] = solution_path
             # _duplicated_solution_path[:solution_path.shape[0], 2] += 100000
 
             # self.sol_lines.set_data(pos=_duplicated_solution_path)
-        if len(solution_path) > 0:
-            self.sol_lines.set_data(pos=solution_path)
 
+        self.sol_lines.set_path(solution_path)
         if self.args.extra_sol:
             fake_solution_path = solution_path.copy()
-            if len(solution_path) > 0:
-                fake_solution_path[:, -1] -= 200000
-            self.fake_sol_lines.set_data(pos=fake_solution_path)
-
-        # vertices = np.array([
-        #     (0, 0, 0), (1, 0, 1), (1, 1, 1), (0, 1, 0),
-        #     (0, 0, 1), (0, 1, 1), (1, 1, 0), (1, 0, 0),
-        #     ])
-        # faces = np.array([(0, 1, 2), (0, 2, 3),
-        #     (0, 4, 5)
-        # ])
+            self.fake_sol_lines.set_path(fake_solution_path)
 
         vertices = []
         faces = []
@@ -160,7 +152,6 @@ class GraphVisualiser:
         except zipfile.BadZipFile as e:
             print(e)
             keepout_zones = []
-
 
         for keepout_zone in keepout_zones:
             # start new index for faces according to current vertices list length
