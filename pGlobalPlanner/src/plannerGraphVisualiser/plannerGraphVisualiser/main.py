@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("-z", "--z-scale-factor", type=float, default=40)
     parser.add_argument("--principle-axis-z-offset", type=float, default=1000)
     parser.add_argument("--principle-axis-length", type=float, default=100000)
+    parser.add_argument("--no-monitor", action="store_true")
 
     return parser.parse_args()
 
@@ -88,4 +89,13 @@ def run():
 
 
 if __name__ == "__main__":
+    if not args.no_monitor:
+        try:
+            print("launching ocean current viewer")
+            from .msg_monitor import pGlobalPlannerMonitor
+
+            moos_app = pGlobalPlannerMonitor()
+            # moos_app.spin()
+        except Exception as e:
+            print(e)
     run()
