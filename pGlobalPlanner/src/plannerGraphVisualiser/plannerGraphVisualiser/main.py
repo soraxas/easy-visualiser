@@ -14,6 +14,11 @@ def parse_args():
         nargs="?",
         default="/tmp/pGlobalPlannerGraph.npz",
     )
+    parser.add_argument(
+        "--depth-datapath",
+        type=str,
+        default="/tmp/depth_points.npy",
+    )
     parser.add_argument("--colormap", default="plasma")
     parser.add_argument("--no-extra-sol", dest="extra_sol", action="store_false")
     parser.add_argument(
@@ -29,11 +34,14 @@ def parse_args():
     parser.add_argument("--principle-axis-z-offset", type=float, default=1000)
     parser.add_argument("--principle-axis-length", type=float, default=100000)
     parser.add_argument("--no-monitor", action="store_true")
+    parser.add_argument("-g", "--graph", action="store_true", help="show rrt graph")
 
     return parser.parse_args()
 
 
 args = parse_args()
+if not args.graph:
+    args.extra_sol = False
 
 
 def run():

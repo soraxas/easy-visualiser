@@ -27,6 +27,9 @@ class Zscaler:
     def set_min(self, min):
         self.min = min
 
+    def scale(self, z_vals):
+        return (z_vals - self.min) * self.z_scale_factor + self.min
+
     def __call__(self, array):
         array[:, 2] = (array[:, 2] - self.min) * self.z_scale_factor + self.min
 
@@ -44,7 +47,7 @@ def get_latest_pdata(args, z_scaler: Zscaler, cost_idx="all"):
     solution_path = pdata["solution_coordinate"]
 
     _min = pos[:, 2].min()
-    z_scaler.set_min(_min)
+    # z_scaler.set_min(_min)
 
     # apply z scale
 
@@ -94,18 +97,26 @@ def get_latest_pdata(args, z_scaler: Zscaler, cost_idx="all"):
 
 
 class Wall:
-    def __init__(self, xy_start, xy_goal, depth):
+    def __init__(self, xy_start, xy_goal, depth, bathy_interp):
         self.xy_start = xy_start
         self.xy_goal = xy_goal
         self.depth = depth
         self.start_idx = 0
+        self.bathy_interp = bathy_interp
 
     def get_vertices(self):
+        depth1 = -self.depth
+        depth2 = -self.depth
+
+        if self.bathy_interp is not None:
+            depth1 = self.bathy_interp(*self.xy_start)
+            depth2 = self.bathy_interp(*self.xy_goal)
+
         return (
             (*self.xy_start, 0),
-            (*self.xy_start, -self.depth),
+            (*self.xy_start, depth1),
             (*self.xy_goal, 0),
-            (*self.xy_goal, -self.depth),
+            (*self.xy_goal, depth2),
         )
 
     def at(self, idx):
@@ -120,30 +131,54 @@ class Wall:
 
 
 class KeepoutZone:
-    def __init__(self, depth, points) -> None:
-        self.depth = depth
+    def __init__(self, depth, points, bathy_interp) -> None:
         self.walls = []
-        self.vertices = []
-        self.faces = []
+        self.depth = depth
 
+        _start_idx = 0
         for i in range(len(points)):
-
-            w = Wall(points[i], points[(i + 1) % len(points)], depth=self.depth)
-            w.start_idx = len(self.vertices)
-            self.vertices.extend(w.get_vertices())
-            self.faces.extend(w.get_faces())
+            w = Wall(
+                points[i],
+                points[(i + 1) % len(points)],
+                depth=self.depth,
+                bathy_interp=bathy_interp,
+            )
+            w.start_idx = _start_idx
+            _start_idx += len(w.get_vertices())
             self.walls.append(w)
+
+    @property
+    def vertices(self):
+        for w in self.walls:
+            yield from w.get_vertices()
+
+    @property
+    def faces(self):
+        for w in self.walls:
+            yield from w.get_faces()
+
+    @property
+    def depth(self):
+        return self.__depth
+
+    @depth.setter
+    def depth(self, value):
+        self.__depth = value
+        for w in self.walls:
+            w.depth = value
 
     def __repr__(self) -> str:
         return f"{np.array([w.xy_start for w in self.walls])}"
 
 
-def get_keepout_zones(args):
+def get_keepout_zones(args, bathy_interp):
     pdata = np.load(args.datapath)
 
     return [
         KeepoutZone(
-            depth=pdata["keepout_zones_depths"][i], points=pdata[f"keepout_zones_{i}"]
+            depth=pdata["keepout_zones_depths"][i],
+            points=pdata[f"keepout_zones_{i}"],
+            bathy_interp=bathy_interp,
         )
         for i in range(len(pdata["keepout_zones_depths"]))
     ]
