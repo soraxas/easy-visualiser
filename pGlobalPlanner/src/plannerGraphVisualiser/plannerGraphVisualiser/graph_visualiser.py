@@ -4,12 +4,14 @@ from vispy import app, scene, color
 import numpy as np
 import scipy
 from vispy.visuals.colorbar import ColorBarVisual
-from vispy.scene.visuals import XYZAxis, GridMesh
+from vispy.scene.visuals import XYZAxis, GridMesh, Text
 from scipy.interpolate import griddata, NearestNDInterpolator
 from ._impl import *
 from typing import Tuple
 
 DUMMY_LINE = np.array([[0, 0, 0], [0, 0.1, 0]])
+DUMMY_CONNECT = np.array([[0, 1]])
+DUMMY_COLOUR = np.array([[0, 0, 0], [0, 0, 0]])
 
 
 class SolutionLine:
@@ -180,6 +182,11 @@ class GraphVisualiser:
             self.lines.set_data(pos=pos, connect=edges, color=colors)
             self.args.cbar_widget.clim = (_min, _max)
             # markers.set_data(pos=pos, face_color=colors)
+        else:
+            self.lines.set_data(
+                pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR
+            )
+            self.args.cbar_widget.clim = (np.nan, np.nan)
 
         if not self.had_set_range:
             self.args.view.camera.set_range()

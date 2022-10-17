@@ -79,7 +79,19 @@ def run():
 
     # col num just to make it on the right size (0 is left)
     grid.add_widget(col=10)
-    grid.add_widget(cbar_widget, col=0)
+    grid.add_widget(cbar_widget, col=0, row_span=10)
+
+    grid.add_widget(
+        scene.Label(
+            "Press [g] to toggle graph",
+            color="white",
+            anchor_x="left",
+            anchor_y="bottom",
+            pos=[0, 0],
+        ),
+        col=0,
+        row=10,
+    )
 
     args.vis = []
     args.vis.append(
@@ -91,6 +103,12 @@ def run():
     from ._impl import update
 
     timer = app.Timer(interval=1, connect=lambda ev: update(args, ev), start=True)
+
+    @canvas.connect
+    def on_key_press(ev):
+        if ev.key.name.upper() == "G":
+            args.graph = not args.graph
+            args.vis[0].update_graph()
 
     update(args, None)
     app.run()
