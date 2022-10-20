@@ -16,12 +16,12 @@ from plannerGraphVisualiser.gridmesh import FixedGridMesh
 
 
 def create_grid_mesh(
-    x_vals: np.ndarray,
-    y_vals: np.ndarray,
-    z_vals: np.ndarray,
-    nums: Tuple[float, float],
-    x_bound: Tuple[float, float] = None,
-    y_bound: Tuple[float, float] = None,
+        x_vals: np.ndarray,
+        y_vals: np.ndarray,
+        z_vals: np.ndarray,
+        nums: Tuple[float, float],
+        x_bound: Tuple[float, float] = None,
+        y_bound: Tuple[float, float] = None,
 ):
     if x_bound is None:
         x_bound = x_vals.min(), x_vals.max()
@@ -49,6 +49,7 @@ class VisualisableBathy(
 ):
     bathy_mesh = None
     bathy_intert: NearestNDInterpolator = None
+    last_min_pos = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,6 +108,8 @@ class VisualisableBathy(
         xx, yy, zz = create_grid_mesh(
             bathymetry[:, 0], bathymetry[:, 1], bathymetry[:, 2], (grid_size, grid_size)
         )
+
+        self.last_min_pos = bathymetry.min(0)  # cache
 
         xx, yy = np.meshgrid(xx, yy, indexing="xy")
 

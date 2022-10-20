@@ -96,7 +96,6 @@ class FileModificationGuardableMixin(GuardableMixin):
 
 
 class UpdatableMixin:
-    key: str
 
     @abstractmethod
     def on_update(self) -> None:

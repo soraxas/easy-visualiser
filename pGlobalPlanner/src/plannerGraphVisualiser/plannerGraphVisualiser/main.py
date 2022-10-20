@@ -6,6 +6,7 @@ import argparse
 from vispy.color import get_colormap, Color
 
 from plannerGraphVisualiser.abstract_visualisable_plugin import ToggleableMixin
+from plannerGraphVisualiser.visualisable_axis import VisualisablePrincipleAxis
 from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
 from plannerGraphVisualiser.visualisable_koz import VisualisableKOZ
 from plannerGraphVisualiser.visualisable_ocean_currents import VisualisableOceanCurrent
@@ -56,7 +57,7 @@ def parse_args():
         "--bathymetry-colour-scale",
         action="store_true",
         help="show bathymetry with colour scale",
-        default=False,
+        default=True,
     )
 
     return parser.parse_args()
@@ -104,6 +105,7 @@ def run():
     args.vis.register_plugin(VisualisableBathy)
     args.vis.register_plugin(VisualisablePlannerGraph)
     args.vis.register_plugin(VisualisableKOZ)
+    args.vis.register_plugin(VisualisablePrincipleAxis)
     # args.vis.register_plugin(VisualisableOceanCurrent)
 
     grid = canvas.central_widget.add_grid(margin=10)

@@ -19,7 +19,9 @@ class Visualiser:
         self.args.z_scaler = Zscaler(z_scale_factor=self.args.z_scale_factor)
 
     def initialise(self):
-        self.plugins = list(pcls(self.args) for pcls in self.plugin_registry)
+        self.plugins = []
+        for pcls in self.plugin_registry:
+            self.plugins.append(pcls(self.args))
 
         @self.args.canvas.connect
         def on_key_press(ev):
