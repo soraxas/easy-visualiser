@@ -7,13 +7,14 @@ from vispy.color import get_colormap
 from vispy.scene import XYZAxis
 
 from plannerGraphVisualiser.abstract_visualisable_plugin import (
-    VisualisablePlugin, UpdatableMixin,
+    VisualisablePlugin,
+    UpdatableMixin,
 )
 from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
 from plannerGraphVisualiser.gridmesh import FixedGridMesh
 
 
-class VisualisablePrincipleAxis(UpdatableMixin,VisualisablePlugin):
+class VisualisablePrincipleAxis(UpdatableMixin, VisualisablePlugin):
     bathy_mesh = None
     bathy_intert: NearestNDInterpolator = None
 
@@ -43,10 +44,9 @@ class VisualisablePrincipleAxis(UpdatableMixin,VisualisablePlugin):
         )
 
         _pos *= self.args.principle_axis_length
-        if self.other_plugins_mapper['bathymetry'].last_min_pos is not None:
-            _pos += self.other_plugins_mapper['bathymetry'].last_min_pos
+        if self.other_plugins_mapper["bathymetry"].last_min_pos is not None:
+            _pos += self.other_plugins_mapper["bathymetry"].last_min_pos
 
         _pos[:, 2] -= self.args.principle_axis_z_offset
 
         self.axis_visual.set_data(pos=_pos)
-

@@ -29,14 +29,15 @@ class VisualisablePlugin(ABC):
     ):
         pass
 
-    def update(self) -> None:
+    def update(self, force=False) -> None:
         """no overriding!"""
-        if not isinstance(self, UpdatableMixin):
-            return
-
-        if isinstance(self, GuardableMixin):
-            if not self.on_update_guard():
+        if not force:
+            if not isinstance(self, UpdatableMixin):
                 return
+
+            if isinstance(self, GuardableMixin):
+                if not self.on_update_guard():
+                    return
 
         self.on_update()
 
@@ -96,7 +97,6 @@ class FileModificationGuardableMixin(GuardableMixin):
 
 
 class UpdatableMixin:
-
     @abstractmethod
     def on_update(self) -> None:
         pass

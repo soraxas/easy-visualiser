@@ -16,12 +16,12 @@ from plannerGraphVisualiser.gridmesh import FixedGridMesh
 
 
 def create_grid_mesh(
-        x_vals: np.ndarray,
-        y_vals: np.ndarray,
-        z_vals: np.ndarray,
-        nums: Tuple[float, float],
-        x_bound: Tuple[float, float] = None,
-        y_bound: Tuple[float, float] = None,
+    x_vals: np.ndarray,
+    y_vals: np.ndarray,
+    z_vals: np.ndarray,
+    nums: Tuple[float, float],
+    x_bound: Tuple[float, float] = None,
+    y_bound: Tuple[float, float] = None,
 ):
     if x_bound is None:
         x_bound = x_vals.min(), x_vals.max()
