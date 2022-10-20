@@ -127,18 +127,26 @@ class pGlobalPlannerMonitor(moos.comms):
             _s = slice(None, None, 10)
             # _s = slice(0, 2)
 
-            _lat = [c.lat for c in currents[_s]]
-            _lon = [c.lon for c in currents[_s]]
-            _u = [c.u for c in currents[_s]]
-            _v = [c.v for c in currents[_s]]
+            _lat = np.array([c.lat for c in currents[_s]])
+            _lon = np.array([c.lon for c in currents[_s]])
+            _u = np.array([c.u for c in currents[_s]])
+            _v = np.array([c.v for c in currents[_s]])
+
+            bo = _lat > -9.99
+
+            _lat = _lat[bo]
+            _lon = _lon[bo]
+            _u = _u[bo]
+            _v = _v[bo]
 
             fig_quiver = ff.create_quiver(
                 _lon,
                 _lat,
                 _u,
                 _v,
-                scale=0.1,
-                arrow_scale=0.15,
+                scale=0.15,
+                # arrow_scale=0.15,
+                arrow_scale=0.35,
                 name="quiver",
                 line_color="red",
                 line_width=0.25,

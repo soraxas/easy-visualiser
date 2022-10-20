@@ -27,14 +27,11 @@ class Zscaler:
     def set_min(self, min):
         self.min = min
 
-    def scale(self, z_vals):
+    def __call__(self, z_vals):
         return (z_vals - self.min) * self.z_scale_factor + self.min
 
-    def __call__(self, array):
-        array[:, 2] = (array[:, 2] - self.min) * self.z_scale_factor + self.min
 
-
-def get_latest_pdata(args, z_scaler: Zscaler, cost_idx="all"):
+def get_latest_pdata(args):
     pdata = np.load(args.datapath)
     # pdata["vertices_id"]
     # pdata["edges"]
@@ -51,16 +48,26 @@ def get_latest_pdata(args, z_scaler: Zscaler, cost_idx="all"):
 
     # apply z scale
 
-    z_scaler(pos)
+    pos[:, 2] = args.z_scaler(pos[:, 2])
     if len(solution_path) > 0:
-        z_scaler(solution_path)
+        solution_path[:, 2] = args.z_scaler(solution_path[:, 2])
 
     edges = pdata["edges"]
 
-    if cost_idx == "all":
+    if (
+        args.cost_index is not None
+        and args.cost_index >= pdata["vertices_costs"].shape[1]
+    ):
+        args.cost_index = None
+
+    if args.cost_index is None:
         _target_costs = pdata["vertices_costs"].copy().sum(1)
     else:
-        _target_costs = pdata["vertices_costs"][:, cost_idx].copy()
+        _target_costs = pdata["vertices_costs"][:, args.cost_index].copy()
+
+    args.cbar_widget.label = (
+        f"Cost {'all' if args.cost_index is None else args.cost_index}"
+    )
 
     global start_markers, goal_markers
 
@@ -109,8 +116,9 @@ class Wall:
         depth2 = -self.depth
 
         if self.bathy_interp is not None:
-            depth1 = self.bathy_interp(*self.xy_start)
-            depth2 = self.bathy_interp(*self.xy_goal)
+            # cut it off at the bathymetry
+            depth1 = max(self.bathy_interp(*self.xy_start), -self.depth)
+            depth2 = max(self.bathy_interp(*self.xy_goal), -self.depth)
 
         return (
             (*self.xy_start, 0),
@@ -176,7 +184,7 @@ def get_keepout_zones(args, bathy_interp):
 
     return [
         KeepoutZone(
-            depth=pdata["keepout_zones_depths"][i],
+            depth=args.z_scaler(pdata["keepout_zones_depths"][i]),
             points=pdata[f"keepout_zones_{i}"],
             bathy_interp=bathy_interp,
         )
@@ -190,12 +198,4 @@ last_modify_time = None
 
 
 def update(args, ev):
-    global last_modify_time
-
-    _mtime = os.path.getmtime(args.datapath)
-    # print(_mtime)
-    if last_modify_time is None or (last_modify_time < _mtime):
-
-        for v in args.vis:
-            v.update()
-        last_modify_time = _mtime
+    args.vis.update()
