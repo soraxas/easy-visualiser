@@ -4,15 +4,18 @@ from typing import Tuple, Optional, Dict, Callable
 import numpy as np
 from scipy.interpolate import griddata, NearestNDInterpolator
 from vispy.color import get_colormap
+from vispy.scene import Mesh
+from vispy.visuals import transforms
 
 from plannerGraphVisualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
     ToggleableMixin,
-    FileModificationGuardableMixin,
+    CallableAndFileModificationGuardableMixin,
     UpdatableMixin,
 )
 from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
 from plannerGraphVisualiser.gridmesh import FixedGridMesh
+from plannerGraphVisualiser.modal_control import ModalControl
 
 
 def create_grid_mesh(
@@ -22,6 +25,7 @@ def create_grid_mesh(
     nums: Tuple[float, float],
     x_bound: Tuple[float, float] = None,
     y_bound: Tuple[float, float] = None,
+    method="nearest",
 ):
     if x_bound is None:
         x_bound = x_vals.min(), x_vals.max()
@@ -37,7 +41,7 @@ def create_grid_mesh(
         (x_vals, y_vals),
         z_vals,
         (xr, yr),
-        method="nearest",
+        method=method,
         # method="cubic",
         # method="linear",
     )
@@ -45,21 +49,31 @@ def create_grid_mesh(
 
 
 class VisualisableBathy(
-    FileModificationGuardableMixin, ToggleableMixin, UpdatableMixin, VisualisablePlugin
+    CallableAndFileModificationGuardableMixin,
+    ToggleableMixin,
+    UpdatableMixin,
+    VisualisablePlugin,
 ):
     bathy_mesh = None
-    bathy_intert: NearestNDInterpolator = None
+    bathy_interp: NearestNDInterpolator = None
     last_min_pos = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.guarding_callable = lambda: self.args.bathymetry
         self.keys = [
-            ("b", "toggle bathymetry", self.__toggle_bathy_cb),
-            (
-                "s",
-                "toggle bathymetry deph colour scale",
-                self.__toggle_bathy_colour_scale_cb,
-            ),
+            ModalControl(
+                "b",
+                [
+                    ("b", "toggle bathymetry", self.__toggle_bathy_cb),
+                    (
+                        "s",
+                        "toggle bathymetry deph colour scale",
+                        self.__toggle_bathy_colour_scale_cb,
+                    ),
+                ],
+                modal_name="bathymetry",
+            )
         ]
 
     def __toggle_bathy_cb(self):
@@ -151,6 +165,5 @@ class VisualisableBathy(
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors_indexed_by_faces = (
                 None
             )
-
-        return
-        ####
+        if not self.had_set_range:
+            self.set_range()

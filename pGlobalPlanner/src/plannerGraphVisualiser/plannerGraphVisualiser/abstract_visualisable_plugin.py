@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 import argparse
 from typing import Optional, Callable, List, Tuple, Dict
 
+from plannerGraphVisualiser.modal_control import ModalControl
+
 
 class PluginState(enum.Enum):
     EMPTY = 0
@@ -15,6 +17,11 @@ class VisualisablePlugin(ABC):
     def __init__(self, args: argparse.Namespace):
         self.args = args
         self.state = PluginState.EMPTY
+        try:
+            VisualisablePlugin.__had_set_range
+        except AttributeError:
+            VisualisablePlugin.__had_set_range = False
+
         if self.construct_plugin():
             self.state = PluginState.OFF
 
@@ -49,9 +56,17 @@ class VisualisablePlugin(ABC):
     def other_plugins_mapper(self) -> Dict[str, "VisualisablePlugin"]:
         return {p.name: p for p in self.args.vis.plugins}
 
+    def set_range(self, *args, **kwargs):
+        self.args.view.camera.set_range(*args, **kwargs)
+        VisualisablePlugin._had_set_range = True
+
+    @property
+    def had_set_range(self) -> bool:
+        return VisualisablePlugin.__had_set_range
+
 
 class ToggleableMixin:
-    keys: List[Tuple[str, str, Callable]]
+    keys: List[ModalControl]
     state: PluginState
     construct_plugin: Callable
 
@@ -75,7 +90,7 @@ class ToggleableMixin:
 class GuardableMixin:
     @abstractmethod
     def on_update_guard(self) -> bool:
-        pass
+        return True
 
 
 class FileModificationGuardableMixin(GuardableMixin):
@@ -87,13 +102,22 @@ class FileModificationGuardableMixin(GuardableMixin):
             _mtime = os.path.getmtime(self.target_file)
             if self._last_modify_time is None or (self._last_modify_time < _mtime):
                 self._last_modify_time = _mtime
-                return True
+                return super().on_update_guard()
         return False
 
     @property
     @abstractmethod
     def target_file(self) -> str:
         raise NotImplementedError()
+
+
+class CallableAndFileModificationGuardableMixin(FileModificationGuardableMixin):
+    guarding_callable: Callable
+
+    def on_update_guard(self) -> bool:
+        if not self.guarding_callable():
+            return False
+        return super().on_update_guard()
 
 
 class UpdatableMixin:

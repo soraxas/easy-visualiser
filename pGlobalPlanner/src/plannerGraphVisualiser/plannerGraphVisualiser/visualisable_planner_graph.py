@@ -8,8 +8,8 @@ from vispy import scene
 from plannerGraphVisualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
     ToggleableMixin,
-    FileModificationGuardableMixin,
     UpdatableMixin,
+    CallableAndFileModificationGuardableMixin,
 )
 from plannerGraphVisualiser.dummy import (
     DUMMY_AXIS_VAL,
@@ -17,6 +17,7 @@ from plannerGraphVisualiser.dummy import (
     DUMMY_CONNECT,
     DUMMY_COLOUR,
 )
+from plannerGraphVisualiser.modal_control import ModalControl
 
 
 class SolutionLine:
@@ -43,16 +44,28 @@ class SolutionLine:
 
 
 class VisualisablePlannerGraph(
-    FileModificationGuardableMixin, ToggleableMixin, UpdatableMixin, VisualisablePlugin
+    CallableAndFileModificationGuardableMixin,
+    ToggleableMixin,
+    UpdatableMixin,
+    VisualisablePlugin,
 ):
     lines = None
     __had_set_range: bool = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.guarding_callable = lambda: True
+        # self.guarding_callable = lambda: self.args.graph
+
         self.keys = [
-            ("g", "toggle planner graph", self.__toggle_graph_cb),
-            ("c", "switch cost index", self.__switch_cost_cb),
+            ModalControl(
+                "p",
+                [
+                    ("g", "toggle planner graph", self.__toggle_graph_cb),
+                    ("c", "switch cost index", self.__switch_cost_cb),
+                ],
+                modal_name="global planner graph",
+            )
         ]
         self.sol_lines = SolutionLine(self.args.view.scene)
         # if self.args.extra_sol:
@@ -137,7 +150,8 @@ class VisualisablePlannerGraph(
         super().turn_on_plugin()
         pos, edges, solution_path, costs = get_latest_pdata(self.args)
 
-        self.__construct_graph(pos, edges, costs)
+        if self.args.graph:
+            self.__construct_graph(pos, edges, costs)
         self.__construct_solution(solution_path)
 
     def turn_off_plugin(self):
@@ -149,9 +163,5 @@ class VisualisablePlannerGraph(
 
     def on_update(self):
         self.turn_on_plugin()
-        self.__set_range()
-
-    def __set_range(self):
-        if not self.__had_set_range:
-            self.args.view.camera.set_range()
-            self.__had_set_range = True
+        if not self.had_set_range:
+            self.set_range()

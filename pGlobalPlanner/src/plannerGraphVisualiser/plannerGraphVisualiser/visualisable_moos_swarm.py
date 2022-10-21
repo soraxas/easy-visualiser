@@ -1,0 +1,281 @@
+import os
+import pymoos as moos
+import traceback
+from typing import Tuple, Optional, Dict, Callable, List
+
+import numpy as np
+import vispy
+from scipy.interpolate import griddata, NearestNDInterpolator
+from vispy.color import get_colormap
+from vispy.scene import XYZAxis, Mesh, Markers
+from vispy.scene import transforms
+
+from plannerGraphVisualiser.abstract_visualisable_plugin import (
+    VisualisablePlugin,
+    UpdatableMixin,
+    GuardableMixin,
+    ToggleableMixin,
+)
+from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
+from plannerGraphVisualiser.gridmesh import FixedGridMesh
+
+from vispy.util import transforms as utran
+
+from plannerGraphVisualiser.modal_control import ModalControl, Key
+
+
+class pMoosVisualiser(moos.comms):
+    class Vehicle:
+        def __init__(self, datastring: List[str]):
+            self.data = dict()
+            self.update(datastring)
+
+        def update(self, datastring: List[str]):
+            self.data = {v[0]: v[1] for v in datastring}
+
+        def float(self, key: str):
+            return float(self.data[key])
+
+        @property
+        def name(self) -> str:
+            return self.data["NAME"]
+
+        @property
+        def pos(self) -> List[float]:
+            return [
+                self.float("X"),
+                self.float("Y"),
+                -self.float("ALTITUDE"),
+            ]
+
+        def __repr__(self):
+            return self.data.__repr__()
+
+    def __init__(self, refresh_cb: Callable):
+        super().__init__()
+        self.connect_to_moos("localhost", 9000)
+        self.refresh_cb = refresh_cb
+
+        self.depths = None
+        self.currents = None
+
+        self.use_real_map = True
+
+        self.vehicles: Dict[pMoosVisualiser.Vehicle] = dict()
+
+    def connect_to_moos(self, moos_host, moos_port):
+        self.set_on_connect_callback(self.__on_connect)
+        self.set_on_mail_callback(self.__on_new_mail)
+        self.run(moos_host, moos_port, self.__class__.__name__)
+        if not self.wait_until_connected(2000):
+            raise RuntimeError("Failed to connect to local MOOSDB")
+
+    def __on_connect(self):
+        self.register("NODE_REPORT_LOCAL", 0)
+        # try:
+        #     self.register("NODE_REPORT_*", 0)
+        #     # self.register(OCEAN_CURRENT_VARIABLE, 0)
+        #     # self.register(DEPTH_POINTS_VARIABLE, 0)
+        # except Exception as e:
+        #     return False
+        return True
+
+    def __on_new_mail(self):
+        try:
+            for msg in self.fetch():
+                # print(msg.key(), )
+                if msg.key() == "NODE_REPORT_LOCAL":
+                    # print(msg.string())
+                    data_list = list(
+                        pair.split("=") for pair in msg.string().split(",")
+                    )
+                    for k, v in data_list:
+                        if k == "NAME":
+                            if v not in self.vehicles:
+                                self.vehicles[v] = pMoosVisualiser.Vehicle(data_list)
+                            else:
+                                self.vehicles[v].update(data_list)
+                            break
+            # self.refresh_cb()
+
+            # print(msg.key(), msg.string())
+
+            # if msg.key() == OCEAN_CURRENT_VARIABLE:
+            #     self.currents = json.loads(msg.string())
+            # elif msg.key() == DEPTH_POINTS_VARIABLE:
+            #     self.depths = json.loads(msg.string())
+        except Exception as e:
+            traceback.print_exc()
+            return False
+        return True
+
+
+class VisualisableMoosSwarm(
+    GuardableMixin, ToggleableMixin, UpdatableMixin, VisualisablePlugin
+):
+    bathy_mesh = None
+    bathy_intert: NearestNDInterpolator = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.moos = pMoosVisualiser(self.refresh)
+        self.vehicle_visual = dict()
+        self.vehicle_scale = 500
+        # self.vehicle_scale = 10
+        self.keys = [
+            ModalControl(
+                "m",
+                [
+                    (
+                        Key(["+", "="]),
+                        "increase scale",
+                        lambda: self.__scale_cb(1.5),
+                    ),
+                    (
+                        Key(["-", "_"]),
+                        "decrease scale",
+                        lambda: self.__scale_cb(0.5),
+                    ),
+                    (
+                        Key(["z"]),
+                        "zoom to swarm",
+                        self.__zoom_cb,
+                    ),
+                ],
+                modal_name="moos swarm",
+            )
+        ]
+
+    def __scale_cb(self, num):
+        self.vehicle_scale *= num
+        self.on_update()
+
+    @property
+    def name(self):
+        return "moos_swarm"
+
+    @property
+    def target_file(self) -> str:
+        return self.args.depth_datapath
+
+    def construct_plugin(self) -> None:
+        super().construct_plugin()
+
+        # self.axis_visual = XYZAxis(
+        #     parent=self.args.view.scene,
+        #     width=5,
+        # )
+
+    def __zoom_cb(self):
+        poses = np.array([v.pos for v in self.moos.vehicles.values()])
+        poses[:, 2] = self.args.z_scaler(poses[:, 2])
+
+        margin = 2000
+        bounds = np.stack([poses.min(0) - margin, poses.max(0) + margin]).T
+
+        # icecream.ic(bounds)
+        # print(self.moos.vehicles)
+        # riesnt
+        self.set_range(*bounds)
+
+    def on_update_guard(self) -> bool:
+        return self.other_plugins_mapper["bathymetry"].last_min_pos is not None
+
+    def refresh(self):
+        pass
+
+    def on_update(self) -> None:
+        # if not self.on_update_guard():
+        #     return
+
+        # print(self.moos.vehicles)
+
+        for n, v in self.moos.vehicles.items():
+            if v.name not in self.vehicle_visual:
+                with open("/home/tin/Downloads/floating_submarine.stl", "rb") as f:
+                    data = vispy.io.stl.load_stl(f)
+                vertices, faces, normals = (
+                    data["vertices"],
+                    data["faces"],
+                    data["face_normals"],
+                )
+                self.vehicle_visual[v.name] = Markers(
+                    symbol="triangle_up",
+                    # faces=faces,
+                    # color=(0.5, 0.7, 0.5, 1),
+                    parent=self.args.view.scene,
+                    # shading="smooth",
+                )
+                # self.vehicle_visual[v.name] = Mesh(
+                #     vertices=vertices,
+                #     faces=faces,
+                #     color=(0.5, 0.7, 0.5, 1),
+                #     parent=self.args.view.scene,
+                #     shading="smooth",
+                # )
+                self.vehicle_visual[v.name].transform = transforms.MatrixTransform()
+
+                # self.vehicle_visual[v.name].transform.scale([2000.1] * 3)
+                self.vehicle_visual[v.name].transform.scale([self.vehicle_scale] * 3)
+
+                # self.vehicle_visual[v.name].set_data()
+
+                print("built")
+            # self.vehicle_visual[v.name].transform = transforms.MatrixTransform()
+            #
+            # # self.vehicle_visual[v.name].transform.scale([2000.1] * 3)
+            # self.vehicle_visual[v.name].transform.scale([self.vehicle_scale] * 3)
+            # # # Create a colored `MeshVisual`.
+            # # mesh = Mesh(vertices, faces, color=(.5, .7, .5, 1),
+            # #             parent=self.args.view.scene,
+            # #             shading='smooth')
+            # # self.vehicle_visual[v.name].transform.rotate(90, (1, 0, 0))
+            #
+            # # self.vehicle_visual[v.name].transform.rotate(
+            # #     self.moos.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1)
+            # # )
+            #
+            # # view.add(self.vehicle_visual[v.name])
+            # # print(self.moos.vehicles[v.name])
+            pos = self.moos.vehicles[v.name].pos
+            pos[2] = self.args.z_scaler(pos[2])
+            # print(np.array(pos).reshape(1, -1))
+
+            self.vehicle_visual[v.name].set_data(
+                pos=np.array(pos).reshape(1, -1), scaling=1000, size=10000
+            )
+
+            # self.vehicle_visual[v.name].transform.translate(pos)
+            continue
+
+            print(pos)
+            # print(self.moos.vehicles[v.name].float('X'), )
+            # self.vehicle_visual[v.name].transform.translate([1, 2, 3])
+            self.vehicle_visual[v.name].transform.rotate(
+                (np.pi + self.moos.vehicles[v.name].float("YAW")) * 180 / np.pi,
+                (0, 0, 1),
+            )
+            print(self.vehicle_visual[v.name].transform.matrix)
+            mat = self.vehicle_visual[v.name].transform.matrix
+            print(mat)
+
+            # mat[:, :] = utran.rotate(
+            #     self.moos.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1))
+            # mat[3, :3] = self.other_plugins_mapper["bathymetry"].last_min_pos
+            mat[3, :3] = pos
+
+            self.vehicle_visual[v.name].transform.matrix = mat
+
+            print(mat)
+
+            # rsient
+            # self.vehicle_visual[v.name].transform.translate = self.other_plugins_mapper["bathymetry"].last_min_pos
+            # self.vehicle_visual[v.name].transform.translate = [0,0,-550]
+            # break
+
+
+# mon = pMoosVisualiser()
+# import time
+#
+# while True:
+#     time.sleep(1)
