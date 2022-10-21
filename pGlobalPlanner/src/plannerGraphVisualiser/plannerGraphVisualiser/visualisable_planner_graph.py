@@ -140,7 +140,7 @@ class VisualisablePlannerGraph(
 
     def __construct_solution(self, solution_path) -> None:
         self.sol_lines.set_path(solution_path)
-        if self.args.extra_sol:
+        if self.args.extra_sol and self.args.graph:
             fake_solution_path = solution_path.copy()
             self.fake_sol_lines.set_path(fake_solution_path)
         else:
