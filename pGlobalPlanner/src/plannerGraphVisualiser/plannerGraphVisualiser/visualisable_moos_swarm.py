@@ -2,6 +2,7 @@ import os
 import pymoos as moos
 import traceback
 from typing import Tuple, Optional, Dict, Callable, List
+import time
 
 import numpy as np
 import vispy
@@ -45,7 +46,7 @@ class pMoosVisualiser(moos.comms):
             return [
                 self.float("X"),
                 self.float("Y"),
-                -self.float("ALTITUDE"),
+                self.float("DEP"),
             ]
 
         def __repr__(self):
@@ -96,7 +97,7 @@ class pMoosVisualiser(moos.comms):
                             else:
                                 self.vehicles[v].update(data_list)
                             break
-            # self.refresh_cb()
+            self.refresh_cb()
 
             # print(msg.key(), msg.string())
 
@@ -111,15 +112,19 @@ class pMoosVisualiser(moos.comms):
 
 
 class VisualisableMoosSwarm(
-    GuardableMixin, ToggleableMixin, UpdatableMixin, VisualisablePlugin
+    GuardableMixin, ToggleableMixin,
+    # UpdatableMixin,
+    VisualisablePlugin
 ):
     bathy_mesh = None
     bathy_intert: NearestNDInterpolator = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.moos = pMoosVisualiser(self.refresh)
+        self.moos = pMoosVisualiser(self.on_update)
+        # self.moos = pMoosVisualiser(self.refresh)
         self.vehicle_visual = dict()
+        self.throttle_last_update = time.time()
         self.vehicle_scale = 500
         # self.vehicle_scale = 10
         self.keys = [
@@ -146,6 +151,7 @@ class VisualisableMoosSwarm(
             )
         ]
 
+
     def __scale_cb(self, num):
         self.vehicle_scale *= num
         self.on_update()
@@ -167,10 +173,12 @@ class VisualisableMoosSwarm(
         # )
 
     def __zoom_cb(self):
+        if len(self.moos.vehicles) < 1:
+            return
         poses = np.array([v.pos for v in self.moos.vehicles.values()])
         poses[:, 2] = self.args.z_scaler(poses[:, 2])
 
-        margin = 2000
+        margin = 300
         bounds = np.stack([poses.min(0) - margin, poses.max(0) + margin]).T
 
         # icecream.ic(bounds)
@@ -179,16 +187,18 @@ class VisualisableMoosSwarm(
         self.set_range(*bounds)
 
     def on_update_guard(self) -> bool:
-        return self.other_plugins_mapper["bathymetry"].last_min_pos is not None
+        return self.other_plugins_mapper["bathymetry"].last_min_pos is not None and self.args.vis.initialised
 
     def refresh(self):
         pass
 
     def on_update(self) -> None:
-        # if not self.on_update_guard():
-        #     return
-
-        # print(self.moos.vehicles)
+        _now = time.time()
+        if _now - self.throttle_last_update < .08:
+            return
+        if not self.on_update_guard():
+            return
+        self.throttle_last_update = _now
 
         for n, v in self.moos.vehicles.items():
             if v.name not in self.vehicle_visual:
@@ -206,21 +216,23 @@ class VisualisableMoosSwarm(
                     parent=self.args.view.scene,
                     # shading="smooth",
                 )
-                # self.vehicle_visual[v.name] = Mesh(
-                #     vertices=vertices,
-                #     faces=faces,
-                #     color=(0.5, 0.7, 0.5, 1),
-                #     parent=self.args.view.scene,
-                #     shading="smooth",
-                # )
-                self.vehicle_visual[v.name].transform = transforms.MatrixTransform()
+                self.vehicle_visual[v.name] = Mesh(
+                    vertices=vertices,
+                    faces=faces,
+                    color=(0.5, 0.7, 0.5, 1),
+                    parent=self.args.view.scene,
+                    shading="smooth",
+                )
 
                 # self.vehicle_visual[v.name].transform.scale([2000.1] * 3)
-                self.vehicle_visual[v.name].transform.scale([self.vehicle_scale] * 3)
 
                 # self.vehicle_visual[v.name].set_data()
 
                 print("built")
+
+            self.vehicle_visual[v.name].transform = transforms.MatrixTransform()
+            self.vehicle_visual[v.name].transform.scale([self.vehicle_scale] * 3)
+
             # self.vehicle_visual[v.name].transform = transforms.MatrixTransform()
             #
             # # self.vehicle_visual[v.name].transform.scale([2000.1] * 3)
@@ -241,23 +253,24 @@ class VisualisableMoosSwarm(
             pos[2] = self.args.z_scaler(pos[2])
             # print(np.array(pos).reshape(1, -1))
 
-            self.vehicle_visual[v.name].set_data(
-                pos=np.array(pos).reshape(1, -1), scaling=1000, size=10000
-            )
+            # self.vehicle_visual[v.name].set_data(
+            #     pos=np.array(pos).reshape(1, -1), scaling=1000, size=10000
+            # )
+            # print(pos)
 
-            # self.vehicle_visual[v.name].transform.translate(pos)
-            continue
+            # # self.vehicle_visual[v.name].transform.translate(pos)
+            # continue
 
-            print(pos)
+            # print(pos)
             # print(self.moos.vehicles[v.name].float('X'), )
             # self.vehicle_visual[v.name].transform.translate([1, 2, 3])
             self.vehicle_visual[v.name].transform.rotate(
                 (np.pi + self.moos.vehicles[v.name].float("YAW")) * 180 / np.pi,
                 (0, 0, 1),
             )
-            print(self.vehicle_visual[v.name].transform.matrix)
+            # print(self.vehicle_visual[v.name].transform.matrix)
             mat = self.vehicle_visual[v.name].transform.matrix
-            print(mat)
+            # print(mat)
 
             # mat[:, :] = utran.rotate(
             #     self.moos.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1))
@@ -266,7 +279,7 @@ class VisualisableMoosSwarm(
 
             self.vehicle_visual[v.name].transform.matrix = mat
 
-            print(mat)
+            # print(mat)
 
             # rsient
             # self.vehicle_visual[v.name].transform.translate = self.other_plugins_mapper["bathymetry"].last_min_pos

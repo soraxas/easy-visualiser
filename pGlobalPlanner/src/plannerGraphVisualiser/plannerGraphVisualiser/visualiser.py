@@ -80,6 +80,7 @@ class Visualiser:
         #     col=0,
         #     row=8,
         #     row_span=2,
+        self.initialised = False
 
     def initialise(self):
         self.plugins = []
@@ -152,3 +153,5 @@ class Visualiser:
     def update(self):
         for plugin in self.plugins:
             plugin.update()
+        self.initialised = True
+
