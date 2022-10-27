@@ -202,7 +202,7 @@ class VisualisableMoosSwarm(
 
         for n, v in self.moos.vehicles.items():
             if v.name not in self.vehicle_visual:
-                with open("/home/tin/Downloads/floating_submarine.stl", "rb") as f:
+                with open("floating_submarine.stl", "rb") as f:
                     data = vispy.io.stl.load_stl(f)
                 vertices, faces, normals = (
                     data["vertices"],
