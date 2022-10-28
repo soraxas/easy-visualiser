@@ -16,6 +16,7 @@ from plannerGraphVisualiser.abstract_visualisable_plugin import (
     UpdatableMixin,
     GuardableMixin,
     ToggleableMixin,
+    VisualisablePluginInitialisationError,
 )
 from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
 from plannerGraphVisualiser.gridmesh import FixedGridMesh
@@ -69,7 +70,10 @@ class pMoosVisualiser(moos.comms):
         self.set_on_mail_callback(self.__on_new_mail)
         self.run(moos_host, moos_port, self.__class__.__name__)
         if not self.wait_until_connected(2000):
-            raise RuntimeError("Failed to connect to local MOOSDB")
+            self.close(True)
+            raise VisualisablePluginInitialisationError(
+                VisualisableMoosSwarm, "Failed to connect to local MOOSDB"
+            )
 
     def __on_connect(self):
         self.register("NODE_REPORT_LOCAL", 0)
@@ -112,9 +116,10 @@ class pMoosVisualiser(moos.comms):
 
 
 class VisualisableMoosSwarm(
-    GuardableMixin, ToggleableMixin,
+    GuardableMixin,
+    ToggleableMixin,
     # UpdatableMixin,
-    VisualisablePlugin
+    VisualisablePlugin,
 ):
     bathy_mesh = None
     bathy_intert: NearestNDInterpolator = None
@@ -151,7 +156,6 @@ class VisualisableMoosSwarm(
             )
         ]
 
-
     def __scale_cb(self, num):
         self.vehicle_scale *= num
         self.on_update()
@@ -187,14 +191,17 @@ class VisualisableMoosSwarm(
         self.set_range(*bounds)
 
     def on_update_guard(self) -> bool:
-        return self.other_plugins_mapper["bathymetry"].last_min_pos is not None and self.args.vis.initialised
+        return (
+            self.other_plugins_mapper["bathymetry"].last_min_pos is not None
+            and self.args.vis.initialised
+        )
 
     def refresh(self):
         pass
 
     def on_update(self) -> None:
         _now = time.time()
-        if _now - self.throttle_last_update < .08:
+        if _now - self.throttle_last_update < 0.08:
             return
         if not self.on_update_guard():
             return

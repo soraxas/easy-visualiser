@@ -2,7 +2,7 @@ import enum
 import os
 from abc import ABC, abstractmethod
 import argparse
-from typing import Optional, Callable, List, Tuple, Dict
+from typing import Optional, Callable, List, Tuple, Dict, Type
 
 from plannerGraphVisualiser.modal_control import ModalControl
 
@@ -63,6 +63,15 @@ class VisualisablePlugin(ABC):
     @property
     def had_set_range(self) -> bool:
         return VisualisablePlugin.__had_set_range
+
+
+class VisualisablePluginInitialisationError(Exception):
+    def __init__(self, plugin_type: Type[VisualisablePlugin], reason: str = ""):
+        self.message = (
+            f"Failed to initialise {plugin_type.__name__}"
+            f"{f': {reason}' if reason else ''}."
+        )
+        super().__init__(self.message)
 
 
 class ToggleableMixin:

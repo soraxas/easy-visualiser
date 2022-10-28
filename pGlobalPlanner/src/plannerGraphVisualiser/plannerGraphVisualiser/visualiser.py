@@ -5,7 +5,11 @@ from vispy.color import get_colormap
 from ._impl import *
 from typing import List, Type
 
-from .abstract_visualisable_plugin import VisualisablePlugin, ToggleableMixin
+from .abstract_visualisable_plugin import (
+    VisualisablePlugin,
+    ToggleableMixin,
+    VisualisablePluginInitialisationError,
+)
 from .modal_control import ModalControl, ModalState
 
 
@@ -85,7 +89,10 @@ class Visualiser:
     def initialise(self):
         self.plugins = []
         for pcls in self.plugin_registry:
-            self.plugins.append(pcls(self.args))
+            try:
+                self.plugins.append(pcls(self.args))
+            except VisualisablePluginInitialisationError as e:
+                print(str(e))
         self.update_status()
 
         @self.args.canvas.connect
@@ -154,4 +161,3 @@ class Visualiser:
         for plugin in self.plugins:
             plugin.update()
         self.initialised = True
-
