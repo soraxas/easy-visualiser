@@ -21,7 +21,7 @@ from plannerGraphVisualiser.modal_control import ModalControl
 
 
 class SolutionLine:
-    def __init__(self, _scene, offset=None):
+    def __init__(self, _scene, offset=None, color="red"):
         self.path = None
         self.offset = offset
         self.line_visual = scene.Line(
@@ -31,7 +31,7 @@ class SolutionLine:
             # method='agg',
             parent=_scene,
             width=5,
-            color="red",
+            color=color,
         )
 
     def set_path(self, _path):

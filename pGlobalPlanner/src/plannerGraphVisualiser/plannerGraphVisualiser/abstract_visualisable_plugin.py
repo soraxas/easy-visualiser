@@ -30,12 +30,6 @@ class VisualisablePlugin(ABC):
     def name(self):
         pass
 
-    def register_on_press_hook(
-        self,
-        key: str,
-    ):
-        pass
-
     def update(self, force=False) -> None:
         """no overriding!"""
         if not force:
@@ -48,7 +42,6 @@ class VisualisablePlugin(ABC):
 
         self.on_update()
 
-    @abstractmethod
     def construct_plugin(self) -> None:
         self.state = PluginState.ON
 

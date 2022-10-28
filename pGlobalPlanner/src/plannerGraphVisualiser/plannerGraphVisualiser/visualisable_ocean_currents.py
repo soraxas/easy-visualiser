@@ -74,7 +74,7 @@ class VisualisableOceanCurrent(
 
     def __change_currents_scale_cb(self, scale):
         if self.__choices_size is None:
-            self.__choices_size = 600
+            self.__choices_size = 1000
 
         self.__choices_size = int(self.__choices_size * scale)
         if self.__choices_size > self.__last_current_size:
