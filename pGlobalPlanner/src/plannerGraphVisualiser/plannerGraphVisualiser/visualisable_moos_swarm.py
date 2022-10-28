@@ -12,6 +12,7 @@ import vispy
 from scipy.interpolate import griddata, NearestNDInterpolator
 from vispy.scene import XYZAxis, Mesh, Markers
 from vispy.scene import transforms
+from vispy import app
 
 from plannerGraphVisualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
@@ -148,6 +149,11 @@ class VisualisableMoosSwarm(
         self.throttle_last_update = time.time()
         self.vehicle_scale = 500
         # self.vehicle_scale = 10
+        self.auto_zoom_timer = app.Timer(
+            interval=2,
+            connect=lambda ev: self.__center_view(),
+            iterations=-1,
+        )
         self.keys = [
             ModalControl(
                 "m",
@@ -166,6 +172,11 @@ class VisualisableMoosSwarm(
                         Key(["z"]),
                         "zoom to swarm",
                         self.__zoom_cb,
+                    ),
+                    (
+                        Key(["c"]),
+                        "toggle auto center view",
+                        self.__toggle_auto_zoom_cb,
                     ),
                     (
                         Key(["a"]),
@@ -197,6 +208,13 @@ class VisualisableMoosSwarm(
         #     width=5,
         # )
 
+    def __toggle_auto_zoom_cb(self):
+        self.__center_view()
+        if self.auto_zoom_timer.running:
+            self.auto_zoom_timer.stop()
+        else:
+            self.auto_zoom_timer.start()
+
     def __zoom_cb(self):
         if len(self.moos.vehicles) < 1:
             return
@@ -210,6 +228,11 @@ class VisualisableMoosSwarm(
         # print(self.moos.vehicles)
         # riesnt
         self.set_range(*bounds)
+
+    def __center_view(self):
+        poses = np.array([v.pos for v in self.moos.vehicles.values()])
+        poses[:, 2] = self.args.z_scaler(poses[:, 2])
+        self.args.view.camera.center = np.array(poses).mean(0)
 
     def __change_swarm_appearance_cb(self):
         val = self.args.swarm_model_type.value
