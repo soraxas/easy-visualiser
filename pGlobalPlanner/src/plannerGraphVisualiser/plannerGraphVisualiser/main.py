@@ -6,7 +6,6 @@ import argparse
 
 import os
 
-
 os.putenv("NO_AT_BRIDGE", "1")
 
 from vispy.color import get_colormap, Color
@@ -15,7 +14,10 @@ from plannerGraphVisualiser.abstract_visualisable_plugin import ToggleableMixin
 from plannerGraphVisualiser.visualisable_axis import VisualisablePrincipleAxis
 from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
 from plannerGraphVisualiser.visualisable_koz import VisualisableKOZ
-from plannerGraphVisualiser.visualisable_moos_swarm import VisualisableMoosSwarm
+from plannerGraphVisualiser.visualisable_moos_swarm import (
+    VisualisableMoosSwarm,
+    SwarmModelType,
+)
 from plannerGraphVisualiser.visualisable_ocean_currents import VisualisableOceanCurrent
 from plannerGraphVisualiser.visualisable_planner_graph import VisualisablePlannerGraph
 from .visualiser import Visualiser
@@ -55,6 +57,11 @@ def parse_args():
     parser.add_argument("--principle-axis-z-offset", type=float, default=1000)
     parser.add_argument("--principle-axis-length", type=float, default=100000)
     parser.add_argument("--no-monitor", action="store_true")
+    parser.add_argument(
+        "--swarm-model-type",
+        choices=[SwarmModelType.auv.name, SwarmModelType.simple_sphere.name],
+        default=SwarmModelType.auv.name,
+    )
     parser.add_argument("-g", "--graph", action="store_true", help="show rrt graph")
     parser.add_argument(
         "--currents", action="store_true", help="show ocean current", default=True
