@@ -23,6 +23,7 @@ from plannerGraphVisualiser.abstract_visualisable_plugin import (
 )
 
 from plannerGraphVisualiser.modal_control import ModalControl, Key
+from plannerGraphVisualiser.moos_comms import pMoosPlannerVisualiser
 
 PITCH_ANGLE_CHANNEL_NAME = "VEHICLE_ANGLE"
 SWARM_VEHICLES_REPORT_CHANNEL_NAME = "NODE_REPORT_LOCAL"
@@ -42,92 +43,31 @@ SWARM_MODEL_MAPPING = {
 }
 
 
-class pMoosVisualiser(moos.comms):
-    class Vehicle:
-        def __init__(self, datastring: List[str]):
-            self.data = dict()
-            self.update(datastring)
+class Vehicle:
+    def __init__(self, datastring: List[str]):
+        self.data = dict()
+        self.update(datastring)
 
-        def update(self, datastring: List[str]):
-            self.data = {v[0]: v[1] for v in datastring}
+    def update(self, datastring: List[str]):
+        self.data = {v[0]: v[1] for v in datastring}
 
-        def float(self, key: str):
-            return float(self.data[key])
+    def float(self, key: str):
+        return float(self.data[key])
 
-        @property
-        def name(self) -> str:
-            return self.data["NAME"]
+    @property
+    def name(self) -> str:
+        return self.data["NAME"]
 
-        @property
-        def pos(self) -> List[float]:
-            return [
-                self.float("X"),
-                self.float("Y"),
-                -self.float("DEP"),
-            ]
+    @property
+    def pos(self) -> List[float]:
+        return [
+            self.float("X"),
+            self.float("Y"),
+            -self.float("DEP"),
+        ]
 
-        def __repr__(self):
-            return self.data.__repr__()
-
-    def __init__(self, refresh_cb: Callable):
-        super().__init__()
-        self.connect_to_moos("localhost", 9000)
-        self.refresh_cb = refresh_cb
-
-        self.depths = None
-        self.currents = None
-
-        self.use_real_map = True
-        self.current_vehicle_angle = 0
-
-        self.vehicles: Dict[pMoosVisualiser.Vehicle] = dict()
-
-    def connect_to_moos(self, moos_host, moos_port):
-        self.set_on_connect_callback(self.__on_connect)
-        self.set_on_mail_callback(self.__on_new_mail)
-        self.run(moos_host, moos_port, self.__class__.__name__)
-        if not self.wait_until_connected(2000):
-            self.close(True)
-            raise VisualisablePluginInitialisationError(
-                VisualisableMoosSwarm, "Failed to connect to local MOOSDB"
-            )
-
-    def __on_connect(self):
-        self.register(SWARM_VEHICLES_REPORT_CHANNEL_NAME, 0)
-        self.register(PITCH_ANGLE_CHANNEL_NAME, 0)
-        return True
-
-    def __on_new_mail(self):
-        try:
-            for msg in self.fetch():
-                # print(msg.key(), )
-                if msg.key() == SWARM_VEHICLES_REPORT_CHANNEL_NAME:
-                    # print(msg.string())
-                    data_list = list(
-                        pair.split("=") for pair in msg.string().split(",")
-                    )
-                    for k, v in data_list:
-                        if k == "NAME":
-                            if v not in self.vehicles:
-                                self.vehicles[v] = pMoosVisualiser.Vehicle(data_list)
-                            else:
-                                self.vehicles[v].update(data_list)
-                            break
-                elif msg.key() == PITCH_ANGLE_CHANNEL_NAME:
-                    self.current_vehicle_angle = msg.double()
-
-            self.refresh_cb()
-
-            # print(msg.key(), msg.string())
-
-            # if msg.key() == OCEAN_CURRENT_VARIABLE:
-            #     self.currents = json.loads(msg.string())
-            # elif msg.key() == DEPTH_POINTS_VARIABLE:
-            #     self.depths = json.loads(msg.string())
-        except Exception as e:
-            traceback.print_exc()
-            return False
-        return True
+    def __repr__(self):
+        return self.data.__repr__()
 
 
 class VisualisableMoosSwarm(
@@ -143,10 +83,21 @@ class VisualisableMoosSwarm(
         super().__init__(*args, **kwargs)
         # cast string arg to enum
         self.args.swarm_model_type = SwarmModelType[self.args.swarm_model_type]
-        self.moos = pMoosVisualiser(self.on_update)
+
+        self.moos = pMoosPlannerVisualiser.get_instance()
+        self.moos.register_variable(
+            SWARM_VEHICLES_REPORT_CHANNEL_NAME, self.moos_vehicle_msg_cb
+        )
+        self.moos.register_variable(
+            PITCH_ANGLE_CHANNEL_NAME, self.moos_vehicle_angle_cb
+        )
+
         # self.moos = pMoosVisualiser(self.refresh)
         self.vehicle_visual: Dict[str, Mesh] = dict()
         self.throttle_last_update = time.time()
+
+        self.vehicles: Dict[Vehicle] = dict()
+        self.current_vehicle_angle: float = 0
         self.vehicle_scale = 500
         # self.vehicle_scale = 10
         self.auto_zoom_timer = app.Timer(
@@ -188,6 +139,20 @@ class VisualisableMoosSwarm(
             )
         ]
 
+    def moos_vehicle_msg_cb(self, msg):
+        data_list = list(pair.split("=") for pair in msg.string().split(","))
+        for k, v in data_list:
+            if k == "NAME":
+                if v not in self.vehicles:
+                    self.vehicles[v] = Vehicle(data_list)
+                else:
+                    self.vehicles[v].update(data_list)
+                break
+        self.on_update()
+
+    def moos_vehicle_angle_cb(self, msg):
+        self.current_vehicle_angle = msg.double()
+
     def __scale_cb(self, num):
         self.vehicle_scale *= num
         self.on_update()
@@ -216,21 +181,18 @@ class VisualisableMoosSwarm(
             self.auto_zoom_timer.start()
 
     def __zoom_cb(self):
-        if len(self.moos.vehicles) < 1:
+        if len(self.vehicles) < 1:
             return
-        poses = np.array([v.pos for v in self.moos.vehicles.values()])
+        poses = np.array([v.pos for v in self.vehicles.values()])
         poses[:, 2] = self.args.z_scaler(poses[:, 2])
 
         margin = 200
         bounds = np.stack([poses.min(0) - margin, poses.max(0) + margin]).T
 
-        # icecream.ic(bounds)
-        # print(self.moos.vehicles)
-        # riesnt
         self.set_range(*bounds)
 
     def __center_view(self):
-        poses = np.array([v.pos for v in self.moos.vehicles.values()])
+        poses = np.array([v.pos for v in self.vehicles.values()])
         poses[:, 2] = self.args.z_scaler(poses[:, 2])
         self.args.view.camera.center = np.array(poses).mean(0)
 
@@ -263,7 +225,7 @@ class VisualisableMoosSwarm(
             return
         self.throttle_last_update = _now
 
-        for n, v in self.moos.vehicles.items():
+        for n, v in self.vehicles.items():
             if v.name not in self.vehicle_visual:
                 with open(SWARM_MODEL_MAPPING[self.args.swarm_model_type], "rb") as f:
                     data = vispy.io.stl.load_stl(f)
@@ -307,12 +269,12 @@ class VisualisableMoosSwarm(
             # # self.vehicle_visual[v.name].transform.rotate(90, (1, 0, 0))
             #
             # # self.vehicle_visual[v.name].transform.rotate(
-            # #     self.moos.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1)
+            # #     self.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1)
             # # )
             #
             # # view.add(self.vehicle_visual[v.name])
-            # # print(self.moos.vehicles[v.name])
-            pos = self.moos.vehicles[v.name].pos
+            # # print(self.vehicles[v.name])
+            pos = self.vehicles[v.name].pos
             pos[2] = self.args.z_scaler(pos[2])
             # print(np.array(pos).reshape(1, -1))
 
@@ -325,22 +287,21 @@ class VisualisableMoosSwarm(
             # continue
 
             # print(pos)
-            # print(self.moos.vehicles[v.name].float('X'), )
+            # print(self.vehicles[v.name].float('X'), )
             # self.vehicle_visual[v.name].transform.translate([1, 2, 3])
 
             # scale the pitch angle according to the z axis exaggerated scale
             _scaled_pitch_angle = math.atan(
-                self.args.z_scaler(math.tan(self.moos.current_vehicle_angle))
+                self.args.z_scaler(math.tan(self.current_vehicle_angle))
             )
 
             self.vehicle_visual[v.name].transform.rotate(
                 _scaled_pitch_angle * 180 / np.pi,
                 (0, 1, 0),
             )
-            # print(self.moos.current_vehicle_angle)
             # print(_scaled_pitch_angle)
             self.vehicle_visual[v.name].transform.rotate(
-                (np.pi + self.moos.vehicles[v.name].float("YAW")) * 180 / np.pi,
+                (np.pi + self.vehicles[v.name].float("YAW")) * 180 / np.pi,
                 (0, 0, 1),
             )
 
@@ -349,7 +310,7 @@ class VisualisableMoosSwarm(
             # print(mat)
 
             # mat[:, :] = utran.rotate(
-            #     self.moos.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1))
+            #     self.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1))
             # mat[3, :3] = self.other_plugins_mapper["bathymetry"].last_min_pos
             mat[3, :3] = pos
 
