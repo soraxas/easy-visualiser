@@ -168,24 +168,6 @@ class VisualisableOceanCurrent(
         colors[::2, :] = cmap.map(norm)
         colors[1::2, :] = colors[::2, :]
 
-        # import icecream
-        #
-        # pos = pos[::64]
-        # icecream.ic(pos)
-        #
-        # icecream.ic(np.stack([pos[::2, ...], pos[1::2, ...]]).shape)
-        # icecream.ic(np.hstack([pos[::2, ...], pos[1::2, ...]]).shape)
-        #
-        #
-        #
-        # _pos = pos.reshape(-1, 6)[:10]
-        # _pos = np.hstack([pos[::2, ...], pos[1::2, ...]])[:2]
-        #
-        # _pos = np.array([[-500,-500,-500,0,0,0]])
-        #
-        #
-        # icecream.ic(_pos)
-
         data = dict(
             pos=pos,
             connect="segments",

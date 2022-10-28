@@ -6,6 +6,10 @@ import argparse
 
 import os
 
+from plannerGraphVisualiser.visualisable_planner_graph_moos import (
+    VisualisablePlannerGraphWithMossMsg,
+)
+
 os.putenv("NO_AT_BRIDGE", "1")
 
 from vispy.color import get_colormap, Color
@@ -64,6 +68,12 @@ def parse_args():
     )
     parser.add_argument("-g", "--graph", action="store_true", help="show rrt graph")
     parser.add_argument(
+        "--graph-solution",
+        action="store_true",
+        help="show rrt graph solution",
+        default=True,
+    )
+    parser.add_argument(
         "--currents", action="store_true", help="show ocean current", default=True
     )
     parser.add_argument(
@@ -106,6 +116,7 @@ def run():
     args.vis.register_plugin(VisualisablePrincipleAxis)
     args.vis.register_plugin(VisualisableOceanCurrent)
     args.vis.register_plugin(VisualisableMoosSwarm)
+    args.vis.register_plugin(VisualisablePlannerGraphWithMossMsg)
     args.vis.initialise()
 
     # grid.add_widget(

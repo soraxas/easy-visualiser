@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Tuple, Optional, Dict, Callable
 
@@ -18,6 +19,7 @@ from plannerGraphVisualiser.dummy import (
     DUMMY_COLOUR,
 )
 from plannerGraphVisualiser.modal_control import ModalControl
+from plannerGraphVisualiser.moos_comms import pMoosPlannerVisualiser
 
 
 class SolutionLine:
@@ -31,7 +33,7 @@ class SolutionLine:
             # method='agg',
             parent=_scene,
             width=5,
-            color="red",
+            color="cyan",
         )
 
     def set_path(self, _path):
@@ -43,67 +45,39 @@ class SolutionLine:
         self.line_visual.set_data(pos=_path)
 
 
-class VisualisablePlannerGraph(
-    CallableAndFileModificationGuardableMixin,
-    ToggleableMixin,
-    UpdatableMixin,
+PLAN_VARIABLE = "GLOBAL_PLAN"
+
+
+class VisualisablePlannerGraphWithMossMsg(
     VisualisablePlugin,
 ):
     lines = None
-    __had_set_range: bool = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guarding_callable = lambda: True
 
-        self.keys = [
-            ModalControl(
-                "p",
-                [
-                    ("g", "toggle planner graph", self.__toggle_graph_cb),
-                    ("s", "toggle planner solution", self.__toggle_solution_cb),
-                    ("c", "switch cost index", self.__switch_cost_cb),
-                ],
-                modal_name="global planner graph",
-            )
-        ]
         self.sol_lines = SolutionLine(self.args.view.scene)
-        # if self.args.extra_sol:
-        self.fake_sol_lines = SolutionLine(self.args.view.scene, offset=200000)
+        self.moos = pMoosPlannerVisualiser.get_instance()
+        self.moos.register_variable(PLAN_VARIABLE, self.__plan_msg_cb)
 
     def __toggle_graph_cb(self):
         self.args.graph = not self.args.graph
         self.args.extra_sol = not self.args.graph
         self.toggle()
 
-    def __toggle_solution_cb(self):
-        self.args.graph_solution = not self.args.graph_solution
-        self.on_update()
-
     @property
     def name(self):
-        return "gplanner graph"
+        return "moos_plan"
 
-    @property
-    def target_file(self):
-        return self.args.datapath
+    def __plan_msg_cb(self, msg):
+        data = json.loads(msg.string())
+        path = np.stack([data["x"], data["y"], data["z"]]).T
+        path[:, 2] = self.args.z_scaler(path[:, 2])
+        self.sol_lines.set_path(path)
 
     def construct_plugin(self) -> None:
         super().construct_plugin()
-        self.args.extra_sol = not self.args.graph
-        self.lines = scene.Line(
-            antialias=False, method="gl", parent=self.args.view.scene, width=3
-        )
-        self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
-        self.args.cbar_widget.clim = (np.nan, np.nan)
-
-    def __switch_cost_cb(self) -> None:
-        if self.args.cost_index is None:
-            self.args.cost_index = 0
-        else:
-            self.args.cost_index += 1
-        self._last_modify_time = None
-        self.update()
 
     def __construct_graph(self, pos, edges, costs) -> None:
         #################################################
@@ -142,8 +116,6 @@ class VisualisablePlannerGraph(
         self.args.cbar_widget.clim = (_min, _max)
 
     def __construct_solution(self, solution_path) -> None:
-        if not self.args.graph_solution:
-            solution_path = []
         self.sol_lines.set_path(solution_path)
         if self.args.extra_sol and self.args.graph:
             fake_solution_path = solution_path.copy()
@@ -153,20 +125,7 @@ class VisualisablePlannerGraph(
 
     def turn_on_plugin(self):
         super().turn_on_plugin()
-        pos, edges, solution_path, costs = get_latest_pdata(self.args)
-
-        if self.args.graph:
-            self.__construct_graph(pos, edges, costs)
-        self.__construct_solution(solution_path)
 
     def turn_off_plugin(self):
         super().turn_off_plugin()
-        self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
-        self.args.cbar_widget.clim = (np.nan, np.nan)
-
-        self.fake_sol_lines.set_path([])
-
-    def on_update(self):
-        self.turn_on_plugin()
-        if not self.had_set_range:
-            self.set_range()
+        # self.sol_lines.set_path()
