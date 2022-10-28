@@ -1,4 +1,5 @@
 import enum
+import math
 import os
 import pymoos as moos
 import traceback
@@ -112,7 +113,7 @@ class pMoosVisualiser(moos.comms):
                                 self.vehicles[v].update(data_list)
                             break
                 elif msg.key() == PITCH_ANGLE_CHANNEL_NAME:
-                    self.current_vehicle_angle = -msg.double()
+                    self.current_vehicle_angle = msg.double()
 
             self.refresh_cb()
 
@@ -303,10 +304,18 @@ class VisualisableMoosSwarm(
             # print(pos)
             # print(self.moos.vehicles[v.name].float('X'), )
             # self.vehicle_visual[v.name].transform.translate([1, 2, 3])
+
+            # scale the pitch angle according to the z axis exaggerated scale
+            _scaled_pitch_angle = math.atan(
+                self.args.z_scaler(math.tan(self.moos.current_vehicle_angle))
+            )
+
             self.vehicle_visual[v.name].transform.rotate(
-                self.moos.current_vehicle_angle * 180 / np.pi,
+                _scaled_pitch_angle * 180 / np.pi,
                 (0, 1, 0),
             )
+            # print(self.moos.current_vehicle_angle)
+            # print(_scaled_pitch_angle)
             self.vehicle_visual[v.name].transform.rotate(
                 (np.pi + self.moos.vehicles[v.name].float("YAW")) * 180 / np.pi,
                 (0, 0, 1),
@@ -322,17 +331,3 @@ class VisualisableMoosSwarm(
             mat[3, :3] = pos
 
             self.vehicle_visual[v.name].transform.matrix = mat
-
-            # print(mat)
-
-            # rsient
-            # self.vehicle_visual[v.name].transform.translate = self.other_plugins_mapper["bathymetry"].last_min_pos
-            # self.vehicle_visual[v.name].transform.translate = [0,0,-550]
-            # break
-
-
-# mon = pMoosVisualiser()
-# import time
-#
-# while True:
-#     time.sleep(1)
