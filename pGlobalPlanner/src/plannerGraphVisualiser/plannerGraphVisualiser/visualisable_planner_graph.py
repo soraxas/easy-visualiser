@@ -2,7 +2,7 @@ import numpy as np
 from plannerGraphVisualiser import get_latest_pdata, mean_confidence_interval
 from vispy import scene
 
-from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
 from .easy_visualiser.plugin_capability import (

@@ -5,7 +5,7 @@ from vispy import app
 import numpy as np
 from vispy.color import get_colormap
 
-from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
 from .easy_visualiser.plugin_capability import (

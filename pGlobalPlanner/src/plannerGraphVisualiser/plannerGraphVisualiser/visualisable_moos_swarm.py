@@ -12,7 +12,7 @@ from vispy.scene import Mesh
 from vispy.scene import transforms
 from vispy import app
 
-from .easy_visualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
 from .easy_visualiser.plugin_capability import ToggleableMixin, GuardableMixin

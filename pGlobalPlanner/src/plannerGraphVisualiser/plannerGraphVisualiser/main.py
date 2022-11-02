@@ -2,13 +2,18 @@ import os
 import argparse
 from vispy import app, scene
 
+from plannerGraphVisualiser.visualisable_axis_with_bathy_offset import (
+    VisualisablePrincipleAxisWithBathyOffset,
+)
 from plannerGraphVisualiser.visualisable_planner_graph_moos import (
     VisualisablePlannerGraphWithMossMsg,
 )
 
 os.putenv("NO_AT_BRIDGE", "1")
 
-from plannerGraphVisualiser.visualisable_axis import VisualisablePrincipleAxis
+from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_axis import (
+    VisualisablePrincipleAxis,
+)
 from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
 from plannerGraphVisualiser.visualisable_koz import VisualisableKOZ
 from plannerGraphVisualiser.visualisable_moos_swarm import (
@@ -103,13 +108,17 @@ def run():
     args.view = view
 
     args.vis = Visualiser(args)
-    args.vis.register_plugin(VisualisableBathy)
-    args.vis.register_plugin(VisualisablePlannerGraph)
-    args.vis.register_plugin(VisualisableKOZ)
-    args.vis.register_plugin(VisualisablePrincipleAxis)
-    args.vis.register_plugin(VisualisableOceanCurrent)
-    args.vis.register_plugin(VisualisableMoosSwarm)
-    args.vis.register_plugin(VisualisablePlannerGraphWithMossMsg)
+    args.vis.register_plugin(VisualisableBathy(args))
+    args.vis.register_plugin(VisualisablePlannerGraph(args))
+    args.vis.register_plugin(VisualisableKOZ(args))
+    args.vis.register_plugin(
+        VisualisablePrincipleAxisWithBathyOffset(
+            args, axis_length=args.principle_axis_length
+        )
+    )
+    args.vis.register_plugin(VisualisableOceanCurrent(args))
+    args.vis.register_plugin(VisualisableMoosSwarm(args))
+    args.vis.register_plugin(VisualisablePlannerGraphWithMossMsg(args))
     args.vis.initialise()
 
     # grid.add_widget(

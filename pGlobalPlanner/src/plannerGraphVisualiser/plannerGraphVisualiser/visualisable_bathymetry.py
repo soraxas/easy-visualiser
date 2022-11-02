@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import griddata, NearestNDInterpolator
 from vispy.color import get_colormap
 
-from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
     UpdatableMixin,
 )

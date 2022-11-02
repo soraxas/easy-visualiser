@@ -3,7 +3,7 @@ from typing import Callable, Dict
 
 import pymoos as moos
 
-from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePluginInitialisationError,
 )
 

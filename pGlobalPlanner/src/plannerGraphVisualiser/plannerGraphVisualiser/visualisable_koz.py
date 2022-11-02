@@ -6,7 +6,7 @@ from scipy.interpolate import griddata
 from vispy import scene
 
 from plannerGraphVisualiser import get_keepout_zones
-from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
 from .easy_visualiser.plugin_capability import (

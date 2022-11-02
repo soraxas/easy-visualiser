@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
 import argparse
 from typing import Dict, Type, TYPE_CHECKING
-from .plugin_capability import PluginState, UpdatableMixin, GuardableMixin
+from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
+    PluginState,
+    UpdatableMixin,
+    GuardableMixin,
+)
 
 if TYPE_CHECKING:
-    from .visualiser import Visualiser
+    from plannerGraphVisualiser.easy_visualiser.visualiser import Visualiser
 
 
 class VisualisablePlugin(ABC):
@@ -40,7 +44,7 @@ class VisualisablePlugin(ABC):
 
     @property
     def other_plugins_mapper(self) -> Dict[str, "VisualisablePlugin"]:
-        return {p.name: p for p in self.args.vis.plugins}
+        return {p.name: p for p in self.visualiser.plugins}
 
     def set_range(self, *args, **kwargs):
         self.args.view.camera.set_range(*args, **kwargs)

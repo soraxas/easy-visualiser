@@ -2,12 +2,12 @@ from itertools import chain
 
 from vispy.color import get_colormap
 
-from typing import List, Type
+from typing import List
 from vispy import scene
 
 from .utils import AxisScaler
 
-from .abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
 )
@@ -16,7 +16,6 @@ from .modal_control import ModalControl, ModalState
 
 
 class Visualiser:
-    plugin_registry: List[Type[VisualisablePlugin]] = []
     polling_registry: List[VisualisablePlugin] = []
     plugins: List[VisualisablePlugin] = []
 
@@ -92,19 +91,15 @@ class Visualiser:
         self.initialised = False
 
     def initialise(self):
-        self.plugins = []
-        for pcls in self.plugin_registry:
+        for plugin in self.plugins:
             try:
-                # initialise
-                plugin = pcls(self.args)
                 # build widget
                 if isinstance(plugin, WidgetsMixin):
                     for widget, data in plugin.get_constructed_widgets():
                         self.grid.add_widget(widget, **data)
-                # build actual plugin
+                # construct actual plugin
                 if plugin.construct_plugin():
                     plugin.state = PluginState.OFF
-                self.plugins.append(plugin)
 
             except VisualisablePluginInitialisationError as e:
                 print(str(e))
@@ -169,8 +164,8 @@ class Visualiser:
 
             self.status_bar.text = msg
 
-    def register_plugin(self, plugin_cls: Type[VisualisablePlugin]):
-        self.plugin_registry.append(plugin_cls)
+    def register_plugin(self, plugin: VisualisablePlugin):
+        self.plugins.append(plugin)
 
     def update(self):
         for plugin in self.plugins:
