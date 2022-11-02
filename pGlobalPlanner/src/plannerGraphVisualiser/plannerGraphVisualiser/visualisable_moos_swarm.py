@@ -1,28 +1,23 @@
 import enum
 import math
 import os
-import pymoos as moos
-import traceback
-from typing import Tuple, Optional, Dict, Callable, List
+from typing import Dict, List
 import time
 import pathlib
 
 import numpy as np
 import vispy
-from scipy.interpolate import griddata, NearestNDInterpolator
-from vispy.scene import XYZAxis, Mesh, Markers
+from scipy.interpolate import NearestNDInterpolator
+from vispy.scene import Mesh
 from vispy.scene import transforms
 from vispy import app
 
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from .easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
-    UpdatableMixin,
-    GuardableMixin,
-    ToggleableMixin,
-    VisualisablePluginInitialisationError,
 )
+from .easy_visualiser.plugin_capability import ToggleableMixin, GuardableMixin
 
-from plannerGraphVisualiser.modal_control import ModalControl, Key
+from .easy_visualiser.modal_control import ModalControl, Key
 from plannerGraphVisualiser.moos_comms import pMoosPlannerVisualiser
 
 PITCH_ANGLE_CHANNEL_NAME = "VEHICLE_ANGLE"

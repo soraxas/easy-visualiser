@@ -2,14 +2,16 @@ from itertools import chain
 
 from vispy.color import get_colormap
 
-from ._impl import *
 from typing import List, Type
+from vispy import scene
+
+from .utils import AxisScaler
 
 from .abstract_visualisable_plugin import (
     VisualisablePlugin,
-    ToggleableMixin,
     VisualisablePluginInitialisationError,
 )
+from .plugin_capability import ToggleableMixin, WidgetsMixin, PluginState
 from .modal_control import ModalControl, ModalState
 
 
@@ -18,7 +20,10 @@ class Visualiser:
     polling_registry: List[VisualisablePlugin] = []
     plugins: List[VisualisablePlugin] = []
 
-    def __init__(self, args):
+    def __init__(
+        self,
+        args,
+    ):
         self.args = args
 
         self.start_markers = None
@@ -26,29 +31,29 @@ class Visualiser:
         self.axis_visual = None
         self.current_modal = ModalState()
 
-        self.args.z_scaler = Zscaler(z_scale_factor=self.args.z_scale_factor)
+        self.args.z_scaler = AxisScaler(scale_factor=self.args.z_scale_factor)
 
         # colormap = get_colormap("viridis")
         # colormap = get_colormap("jet")
         # colormap = get_colormap("plasma")
         args.colormap = get_colormap(args.colormap)
 
-        cbar_widget = scene.ColorBarWidget(
-            label="Cost",
-            clim=(0, 99),
-            cmap=args.colormap,
-            orientation="right",
-            border_width=1,
-            label_color="#ffffff",
-        )
-        cbar_widget.border_color = "#212121"
-        args.cbar_widget = cbar_widget
+        # cbar_widget = scene.ColorBarWidget(
+        #     label="Cost",
+        #     clim=(0, 99),
+        #     cmap=args.colormap,
+        #     orientation="right",
+        #     border_width=1,
+        #     label_color="#ffffff",
+        # )
+        # cbar_widget.border_color = "#212121"
+        # args.cbar_widget = cbar_widget
+        # self.grid.add_widget(cbar_widget, col=10, row_span=9)
 
-        grid = args.canvas.central_widget.add_grid(margin=10)
+        self.grid = args.canvas.central_widget.add_grid(margin=10)
 
         # col num just to make it on the right size (0 is left)
-        grid.add_widget(col=10)
-        grid.add_widget(cbar_widget, col=10, row_span=9)
+        self.grid.add_widget(col=10)
         self.status_bar = scene.Label(
             "",
             color="white",
@@ -56,7 +61,7 @@ class Visualiser:
             anchor_y="bottom",
             pos=[0, 0],
         )
-        grid.add_widget(
+        self.grid.add_widget(
             self.status_bar,
             col=0,
             row=0,
@@ -90,7 +95,17 @@ class Visualiser:
         self.plugins = []
         for pcls in self.plugin_registry:
             try:
-                self.plugins.append(pcls(self.args))
+                # initialise
+                plugin = pcls(self.args)
+                # build widget
+                if isinstance(plugin, WidgetsMixin):
+                    for widget, data in plugin.get_constructed_widgets():
+                        self.grid.add_widget(widget, **data)
+                # build actual plugin
+                if plugin.construct_plugin():
+                    plugin.state = PluginState.OFF
+                self.plugins.append(plugin)
+
             except VisualisablePluginInitialisationError as e:
                 print(str(e))
         self.update_status()

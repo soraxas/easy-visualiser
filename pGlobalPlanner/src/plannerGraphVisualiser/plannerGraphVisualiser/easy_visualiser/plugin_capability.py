@@ -2,69 +2,17 @@ import enum
 import os
 from abc import ABC, abstractmethod
 import argparse
-from typing import Optional, Callable, List, Tuple, Dict, Type
+from typing import Optional, Callable, List, Dict, Type, Tuple
 
-from plannerGraphVisualiser.modal_control import ModalControl
+from vispy.scene import Widget
+
+from .modal_control import ModalControl
 
 
 class PluginState(enum.Enum):
     EMPTY = 0
     ON = 1
     OFF = 2
-
-
-class VisualisablePlugin(ABC):
-    def __init__(self, args: argparse.Namespace):
-        self.args = args
-        self.state = PluginState.EMPTY
-        try:
-            VisualisablePlugin.__had_set_range
-        except AttributeError:
-            VisualisablePlugin.__had_set_range = False
-
-        if self.construct_plugin():
-            self.state = PluginState.OFF
-
-    @property
-    @abstractmethod
-    def name(self):
-        pass
-
-    def update(self, force=False) -> None:
-        """no overriding!"""
-        if not force:
-            if not isinstance(self, UpdatableMixin):
-                return
-
-            if isinstance(self, GuardableMixin):
-                if not self.on_update_guard():
-                    return
-
-        self.on_update()
-
-    def construct_plugin(self) -> None:
-        self.state = PluginState.ON
-
-    @property
-    def other_plugins_mapper(self) -> Dict[str, "VisualisablePlugin"]:
-        return {p.name: p for p in self.args.vis.plugins}
-
-    def set_range(self, *args, **kwargs):
-        self.args.view.camera.set_range(*args, **kwargs)
-        VisualisablePlugin._had_set_range = True
-
-    @property
-    def had_set_range(self) -> bool:
-        return VisualisablePlugin.__had_set_range
-
-
-class VisualisablePluginInitialisationError(Exception):
-    def __init__(self, plugin_type: Type[VisualisablePlugin], reason: str = ""):
-        self.message = (
-            f"Failed to initialise {plugin_type.__name__}"
-            f"{f': {reason}' if reason else ''}."
-        )
-        super().__init__(self.message)
 
 
 class ToggleableMixin:
@@ -125,4 +73,10 @@ class CallableAndFileModificationGuardableMixin(FileModificationGuardableMixin):
 class UpdatableMixin:
     @abstractmethod
     def on_update(self) -> None:
+        pass
+
+
+class WidgetsMixin:
+    @abstractmethod
+    def get_constructed_widgets(self) -> List[Tuple[Widget, Dict]]:
         pass

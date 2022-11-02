@@ -19,18 +19,6 @@ start_markers = None
 goal_markers = None
 
 
-class Zscaler:
-    def __init__(self, z_scale_factor) -> None:
-        self.min = 0
-        self.z_scale_factor = z_scale_factor
-
-    def set_min(self, min):
-        self.min = min
-
-    def __call__(self, z_vals):
-        return (z_vals - self.min) * self.z_scale_factor + self.min
-
-
 def get_latest_pdata(args):
     pdata = np.load(args.datapath)
     # pdata["vertices_id"]

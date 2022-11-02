@@ -1,21 +1,18 @@
-import os
 import zipfile
-from typing import Tuple, Optional, Dict, Callable
+from typing import Tuple
 
 import numpy as np
-from scipy.interpolate import griddata, NearestNDInterpolator
+from scipy.interpolate import griddata
 from vispy import scene
-from vispy.color import get_colormap
 
 from plannerGraphVisualiser import get_keepout_zones
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
-    ToggleableMixin,
+)
+from .easy_visualiser.plugin_capability import (
     FileModificationGuardableMixin,
     UpdatableMixin,
 )
-from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
-from plannerGraphVisualiser.gridmesh import FixedGridMesh
 from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
 
 AVG_OCEAN_DEPTH = 4_000

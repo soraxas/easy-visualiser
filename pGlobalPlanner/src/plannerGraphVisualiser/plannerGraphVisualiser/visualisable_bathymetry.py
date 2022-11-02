@@ -1,21 +1,20 @@
-import os
-from typing import Tuple, Optional, Dict, Callable
+from typing import Tuple, Dict
 
 import numpy as np
 from scipy.interpolate import griddata, NearestNDInterpolator
 from vispy.color import get_colormap
-from vispy.scene import Mesh
-from vispy.visuals import transforms
 
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
-    ToggleableMixin,
-    CallableAndFileModificationGuardableMixin,
     UpdatableMixin,
 )
-from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
+from .easy_visualiser.plugin_capability import (
+    ToggleableMixin,
+    CallableAndFileModificationGuardableMixin,
+)
+from plannerGraphVisualiser.easy_visualiser.dummy import DUMMY_AXIS_VAL
 from plannerGraphVisualiser.gridmesh import FixedGridMesh
-from plannerGraphVisualiser.modal_control import ModalControl
+from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
 
 
 def create_grid_mesh(

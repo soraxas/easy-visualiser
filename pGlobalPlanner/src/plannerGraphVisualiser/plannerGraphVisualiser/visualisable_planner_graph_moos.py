@@ -1,7 +1,7 @@
 import json
 import numpy as np
 
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
 from plannerGraphVisualiser.moos_comms import pMoosPlannerVisualiser

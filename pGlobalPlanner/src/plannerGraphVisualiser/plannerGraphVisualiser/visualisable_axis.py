@@ -1,22 +1,18 @@
-import os
-from typing import Tuple, Optional, Dict, Callable
-
 import numpy as np
-from scipy.interpolate import griddata, NearestNDInterpolator
-from vispy.color import get_colormap
 from vispy.scene import XYZAxis
 
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
     UpdatableMixin,
 )
-from plannerGraphVisualiser.dummy import DUMMY_AXIS_VAL
-from plannerGraphVisualiser.gridmesh import FixedGridMesh
 
 
 class VisualisablePrincipleAxis(UpdatableMixin, VisualisablePlugin):
-    bathy_mesh = None
-    bathy_intert: NearestNDInterpolator = None
+    axis_visual: XYZAxis
+    __axis_pos = np.array(
+        [[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]],
+        dtype=np.float,
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,10 +20,6 @@ class VisualisablePrincipleAxis(UpdatableMixin, VisualisablePlugin):
     @property
     def name(self):
         return "principle_axis"
-
-    @property
-    def target_file(self) -> str:
-        return self.args.depth_datapath
 
     def construct_plugin(self) -> None:
         super().construct_plugin()
@@ -38,15 +30,11 @@ class VisualisablePrincipleAxis(UpdatableMixin, VisualisablePlugin):
         )
 
     def on_update(self) -> None:
-        _pos = np.array(
-            [[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]],
-            dtype=np.float,
-        )
-
-        _pos *= self.args.principle_axis_length
+        pass
+        self.__axis_pos *= self.args.principle_axis_length
         if self.other_plugins_mapper["bathymetry"].last_min_pos is not None:
-            _pos += self.other_plugins_mapper["bathymetry"].last_min_pos
+            self.__axis_pos += self.other_plugins_mapper["bathymetry"].last_min_pos
 
-        _pos[:, 2] -= self.args.principle_axis_z_offset
+        self.__axis_pos[:, 2] -= self.args.principle_axis_z_offset
 
-        self.axis_visual.set_data(pos=_pos)
+        self.axis_visual.set_data(pos=self.__axis_pos)

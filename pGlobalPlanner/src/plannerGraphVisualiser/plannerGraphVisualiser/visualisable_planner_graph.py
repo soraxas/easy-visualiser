@@ -1,23 +1,22 @@
-import os
-from typing import Tuple, Optional, Dict, Callable
-
 import numpy as np
 from plannerGraphVisualiser import get_latest_pdata, mean_confidence_interval
 from vispy import scene
 
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
+)
+from .easy_visualiser.plugin_capability import (
     ToggleableMixin,
     UpdatableMixin,
     CallableAndFileModificationGuardableMixin,
+    WidgetsMixin,
 )
-from plannerGraphVisualiser.dummy import (
-    DUMMY_AXIS_VAL,
+from plannerGraphVisualiser.easy_visualiser.dummy import (
     DUMMY_LINE,
     DUMMY_CONNECT,
     DUMMY_COLOUR,
 )
-from plannerGraphVisualiser.modal_control import ModalControl
+from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
 
 
 class SolutionLine:
@@ -45,11 +44,13 @@ class SolutionLine:
 
 class VisualisablePlannerGraph(
     CallableAndFileModificationGuardableMixin,
+    WidgetsMixin,
     ToggleableMixin,
     UpdatableMixin,
     VisualisablePlugin,
 ):
     lines = None
+    cbar_widget: scene.ColorBarWidget
     __had_set_range: bool = False
 
     def __init__(self, *args, **kwargs):
@@ -80,6 +81,19 @@ class VisualisablePlannerGraph(
         self.args.graph_solution = not self.args.graph_solution
         self.on_update()
 
+    def get_constructed_widgets(self):
+        cbar_widget = scene.ColorBarWidget(
+            label="Cost",
+            clim=(0, 99),
+            cmap=self.args.colormap,
+            orientation="right",
+            border_width=1,
+            label_color="#ffffff",
+        )
+        cbar_widget.border_color = "#212121"
+        self.cbar_widget = cbar_widget
+        return [(cbar_widget, dict(col=10, row_span=9))]
+
     @property
     def name(self):
         return "gplanner graph"
@@ -95,7 +109,7 @@ class VisualisablePlannerGraph(
             antialias=False, method="gl", parent=self.args.view.scene, width=3
         )
         self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
-        self.args.cbar_widget.clim = (np.nan, np.nan)
+        self.cbar_widget.clim = (np.nan, np.nan)
 
     def __switch_cost_cb(self) -> None:
         if self.args.cost_index is None:
@@ -139,7 +153,7 @@ class VisualisablePlannerGraph(
         colors = self.args.colormap.map(costs)  # [:-2]
 
         self.lines.set_data(pos=pos, connect=edges, color=colors)
-        self.args.cbar_widget.clim = (_min, _max)
+        self.cbar_widget.clim = (_min, _max)
 
     def __construct_solution(self, solution_path) -> None:
         if not self.args.graph_solution:
@@ -162,7 +176,7 @@ class VisualisablePlannerGraph(
     def turn_off_plugin(self):
         super().turn_off_plugin()
         self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
-        self.args.cbar_widget.clim = (np.nan, np.nan)
+        self.cbar_widget.clim = (np.nan, np.nan)
 
         self.fake_sol_lines.set_path([])
 

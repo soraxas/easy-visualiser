@@ -1,23 +1,24 @@
-from typing import Tuple, Optional, Dict, Callable
+from typing import Dict
 from vispy.scene.visuals import Arrow
 from vispy import app
 
 import numpy as np
 from vispy.color import get_colormap
 
-from plannerGraphVisualiser.abstract_visualisable_plugin import (
+from plannerGraphVisualiser.easy_visualiser.abstract_visualisable_plugin import (
     VisualisablePlugin,
+)
+from .easy_visualiser.plugin_capability import (
     ToggleableMixin,
     CallableAndFileModificationGuardableMixin,
     UpdatableMixin,
 )
-from plannerGraphVisualiser.dummy import (
-    DUMMY_AXIS_VAL,
+from plannerGraphVisualiser.easy_visualiser.dummy import (
     DUMMY_COLOUR,
     DUMMY_LINE,
     DUMMY_ARROW,
 )
-from plannerGraphVisualiser.modal_control import ModalControl, Key
+from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl, Key
 
 
 class VisualisableOceanCurrent(
