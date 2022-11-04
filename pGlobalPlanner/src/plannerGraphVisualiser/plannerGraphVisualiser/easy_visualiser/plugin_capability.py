@@ -3,10 +3,15 @@ import os
 from abc import ABC, abstractmethod
 import argparse
 from typing import Optional, Callable, List, Dict, Type, Tuple
-
+import sys
 from vispy.scene import Widget
 
 from .modal_control import ModalControl
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict, Literal, overload  # pylint: disable=no-name-in-module
+else:
+    from typing_extensions import TypedDict, Literal, overload
 
 
 class PluginState(enum.Enum):
@@ -76,7 +81,15 @@ class UpdatableMixin:
         pass
 
 
+class WidgetOption(TypedDict, total=False):
+    widget: Widget
+    row: int
+    col: int
+    row_span: int
+    col_span: int
+
+
 class WidgetsMixin:
     @abstractmethod
-    def get_constructed_widgets(self) -> List[Tuple[Widget, Dict]]:
+    def get_constructed_widgets(self) -> List[Tuple[Widget, WidgetOption]]:
         pass

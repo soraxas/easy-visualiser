@@ -80,7 +80,7 @@ class VisualisableKOZ(
         faces = []
 
         try:
-            bathy_vis: VisualisableBathy = self.other_plugins_mapper["bathymetry"]
+            bathy_vis: VisualisableBathy = self.other_plugins.bathymetry
 
             keepout_zones = get_keepout_zones(self.args, bathy_vis.bathy_interp)
             # for k in keepout_zones:

@@ -8,3 +8,7 @@ class AxisScaler:
 
     def __call__(self, value: float) -> float:
         return (value - self.min) * self.scale_factor + self.min
+
+
+def boolean_to_onoff(boolean: bool):
+    return "ON" if boolean else "OFF"

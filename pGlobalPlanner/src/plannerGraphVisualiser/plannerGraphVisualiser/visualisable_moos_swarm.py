@@ -205,7 +205,7 @@ class VisualisableMoosSwarm(
 
     def on_update_guard(self) -> bool:
         return (
-            self.other_plugins_mapper["bathymetry"].last_min_pos is not None
+            self.other_plugins.bathymetry.last_min_pos is not None
             and self.args.vis.initialised
         )
 
@@ -306,7 +306,7 @@ class VisualisableMoosSwarm(
 
             # mat[:, :] = utran.rotate(
             #     self.vehicles[v.name].float("YAW") * 180 / np.pi, (0, 0, 1))
-            # mat[3, :3] = self.other_plugins_mapper["bathymetry"].last_min_pos
+            # mat[3, :3] = self.other_plugins.bathymetry.last_min_pos
             mat[3, :3] = pos
 
             self.vehicle_visual[v.name].transform.matrix = mat

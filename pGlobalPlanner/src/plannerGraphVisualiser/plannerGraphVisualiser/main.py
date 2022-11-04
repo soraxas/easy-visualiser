@@ -2,6 +2,9 @@ import os
 import argparse
 from vispy import app, scene
 
+from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
+    VisualisableStatusBar,
+)
 from plannerGraphVisualiser.visualisable_axis_with_bathy_offset import (
     VisualisablePrincipleAxisWithBathyOffset,
 )
@@ -24,70 +27,70 @@ from plannerGraphVisualiser.visualisable_ocean_currents import VisualisableOcean
 from plannerGraphVisualiser.visualisable_planner_graph import VisualisablePlannerGraph
 from .easy_visualiser.visualiser import Visualiser
 
+import subprocess
+import sys
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="pGlobalPlannerVisualiser.")
-    parser.add_argument(
-        "datapath",
-        metavar="DATA",
-        type=str,
-        nargs="?",
-        default="/tmp/pGlobalPlannerGraph.npz",
-    )
-    parser.add_argument(
-        "--depth-datapath",
-        type=str,
-        default="/tmp/depth_points.npy",
-    )
-    parser.add_argument(
-        "--current-datapath",
-        type=str,
-        default="/tmp/ocean_currents.npy",
-    )
-    parser.add_argument("--colormap", default="plasma")
-    parser.add_argument("--no-extra-sol", dest="extra_sol", action="store_false")
-    parser.add_argument(
-        "--no-ci",
-        dest="use_ci",
-        help="use 95 confident interval for setting cost limit (to avoid being overwhelmed by extremely high cost value)",
-        action="store_false",
-    )
-    parser.add_argument("--min", type=float)
-    parser.add_argument("-m", "--max", type=float)
-    parser.add_argument("-c", "--cost-index", type=int)
-    parser.add_argument("-z", "--z-scale-factor", type=float, default=40)
-    parser.add_argument("--principle-axis-z-offset", type=float, default=1000)
-    parser.add_argument("--principle-axis-length", type=float, default=100000)
-    parser.add_argument("--no-monitor", action="store_true")
-    parser.add_argument(
-        "--swarm-model-type",
-        choices=[SwarmModelType.auv.name, SwarmModelType.simple_sphere.name],
-        default=SwarmModelType.auv.name,
-    )
-    parser.add_argument("-g", "--graph", action="store_true", help="show rrt graph")
-    parser.add_argument(
-        "--graph-solution",
-        action="store_true",
-        help="show rrt graph solution",
-        default=True,
-    )
-    parser.add_argument(
-        "--currents", action="store_true", help="show ocean current", default=True
-    )
-    parser.add_argument(
-        "--bathymetry", action="store_true", help="show bathymetry", default=True
-    )
-    parser.add_argument(
-        "--bathymetry-colour-scale",
-        action="store_true",
-        help="show bathymetry with colour scale",
-        default=True,
-    )
+try:
+    from tap import Tap
+except ModuleNotFoundError:
 
-    return parser.parse_args()
+    def install(package):
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+    install("typed-argument-parser")
+    from tap import Tap
 
 
-args = parse_args()
+class ToggleableBool:
+    def __init__(self, value: bool = True):
+        self.value: bool = value
+
+    def __bool__(self) -> bool:
+        return self.value
+
+    def __repr__(self):
+        return "bool"
+
+
+class PlannerVisualiserArgParser(Tap):
+    datapath: str
+    depth_datapath: str = "/tmp/depth_points.npy"
+    current_datapath: str = "/tmp/ocean_currents.npy"
+    colormap: str = "plasma"
+    extra_sol: ToggleableBool = True
+    use_ci: bool = True
+    """
+    use 95 confident interval for setting cost limit (to avoid being overwhelmed by extremely high cost value)
+    """
+    min: float = None
+    max: float = None
+    z_scale_factor: float = 40
+    principle_axis_z_offset: float = 1000
+    principle_axis_length: float = 100000
+    no_monitor: bool = True
+    swarm_model_type: str = SwarmModelType.auv.name
+    graph: bool = False  # show rrt graph
+    graph_solution: bool = True  # show rrt graph solution
+    currents: bool = True  # show ocean current
+    bathymetry: bool = True  # show bathymetry
+    bathymetry_colour_scale: bool = True  # show bathymetry with colour scale
+
+    def configure(self):
+        self.add_argument(
+            "datapath",
+            metavar="DATA",
+            type=str,
+            nargs="?",
+            default="/tmp/pGlobalPlannerGraph.npz",
+        )
+        self.add_argument(
+            "--swarm-model-type",
+            choices=[SwarmModelType.auv.name, SwarmModelType.simple_sphere.name],
+            default=SwarmModelType.auv.name,
+        )
+
+
+args = PlannerVisualiserArgParser(underscores_to_dashes=True).parse_args()
 if not args.graph:
     args.extra_sol = False
 
@@ -108,6 +111,7 @@ def run():
     args.view = view
 
     args.vis = Visualiser(args)
+    args.vis.register_plugin(VisualisableStatusBar(args))
     args.vis.register_plugin(VisualisableBathy(args))
     args.vis.register_plugin(VisualisablePlannerGraph(args))
     args.vis.register_plugin(VisualisableKOZ(args))
@@ -120,33 +124,6 @@ def run():
     args.vis.register_plugin(VisualisableMoosSwarm(args))
     args.vis.register_plugin(VisualisablePlannerGraphWithMossMsg(args))
     args.vis.initialise()
-
-    # grid.add_widget(
-    #     scene.Label(
-    #         "\n".join(
-    #             "Press [{key}] to {functionality}".format(
-    #                 key=cb[0], functionality=cb[1]
-    #             )
-    #             for cb in chain(
-    #                 *(
-    #                     p.keys
-    #                     for p in args.vis.plugins
-    #                     if isinstance(p, ToggleableMixin)
-    #                 )
-    #             )
-    #         ),
-    #         color="white",
-    #         anchor_x="left",
-    #         anchor_y="bottom",
-    #         pos=[0, 0],
-    #     ),
-    #     col=0,
-    #     row=8,
-    #     row_span=2,
-    # )
-
-    # vis = GraphVisualiser(cbar_widget, 0)
-    # vis2 = GraphVisualiser(cbar_widget, 1, np.array([-300000, 0, 0]))
 
     from ._impl import update
 

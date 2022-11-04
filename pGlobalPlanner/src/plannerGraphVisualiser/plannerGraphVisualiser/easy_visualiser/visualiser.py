@@ -1,9 +1,7 @@
-from itertools import chain
-
+import dataclasses
 from vispy.color import get_colormap
 
-from typing import List
-from vispy import scene
+from typing import List, Tuple, Dict, Callable
 
 from .utils import AxisScaler
 
@@ -11,8 +9,14 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
 )
-from .plugin_capability import ToggleableMixin, WidgetsMixin, PluginState
+from .plugin_capability import ToggleableMixin, WidgetsMixin, PluginState, WidgetOption
 from .modal_control import ModalControl, ModalState
+
+
+@dataclasses.dataclass
+class VisualiserHooks:
+    on_initialisation_finish: List[Callable]
+    on_keypress_finish: List[Callable]
 
 
 class Visualiser:
@@ -29,6 +33,7 @@ class Visualiser:
         self.goal_markers = None
         self.axis_visual = None
         self.current_modal = ModalState()
+        self.hooks = VisualiserHooks([], [])
 
         self.args.z_scaler = AxisScaler(scale_factor=self.args.z_scale_factor)
 
@@ -37,85 +42,45 @@ class Visualiser:
         # colormap = get_colormap("plasma")
         args.colormap = get_colormap(args.colormap)
 
-        # cbar_widget = scene.ColorBarWidget(
-        #     label="Cost",
-        #     clim=(0, 99),
-        #     cmap=args.colormap,
-        #     orientation="right",
-        #     border_width=1,
-        #     label_color="#ffffff",
-        # )
-        # cbar_widget.border_color = "#212121"
-        # args.cbar_widget = cbar_widget
-        # self.grid.add_widget(cbar_widget, col=10, row_span=9)
-
         self.grid = args.canvas.central_widget.add_grid(margin=10)
-
         # col num just to make it on the right size (0 is left)
         self.grid.add_widget(col=10)
-        self.status_bar = scene.Label(
-            "",
-            color="white",
-            anchor_x="left",
-            anchor_y="bottom",
-            pos=[0, 0],
-        )
-        self.grid.add_widget(
-            self.status_bar,
-            col=0,
-            row=0,
-            row_span=1,
-        )
 
-        #     scene.Label(
-        #         "\n".join(
-        #             "Press [{key}] to {functionality}".format(
-        #                 key=cb[0], functionality=cb[1]
-        #             )
-        #             for cb in chain(
-        #                 *(
-        #                     p.keys
-        #                     for p in args.vis.plugins
-        #                     if isinstance(p, ToggleableMixin)
-        #                 )
-        #             )
-        #         ),
-        #         color="white",
-        #         anchor_x="left",
-        #         anchor_y="bottom",
-        #         pos=[0, 0],
-        #     ),
-        #     col=0,
-        #     row=8,
-        #     row_span=2,
         self.initialised = False
 
     def initialise(self):
         for plugin in self.plugins:
             try:
+                ###########################################################
                 # build widget
                 if isinstance(plugin, WidgetsMixin):
                     for widget, data in plugin.get_constructed_widgets():
                         self.grid.add_widget(widget, **data)
+                ###########################################################
                 # construct actual plugin
                 if plugin.construct_plugin():
                     plugin.state = PluginState.OFF
+                ###########################################################
+                # register hooks
+                plugin.on_initialisation_finish()
+                ###########################################################
 
             except VisualisablePluginInitialisationError as e:
                 print(str(e))
-        self.update_status()
+        for hook in self.hooks.on_initialisation_finish:
+            hook()
 
         @self.args.canvas.connect
         def on_key_press(ev):
             def process():
                 # print(ev.key.name)
-                for plugin in (
+                for _plugin in (
                     p for p in self.plugins if isinstance(p, ToggleableMixin)
                 ):
 
                     if self.current_modal.state is None:
                         # selecting modal
-                        for registered_modal in plugin.keys:
+                        for registered_modal in _plugin.keys:
 
                             if isinstance(registered_modal, tuple):
                                 continue
@@ -129,40 +94,15 @@ class Visualiser:
                         if ModalState.quit_key.match(ev.key.name):
                             self.current_modal.state = None
                             return True
-                        for _key, _, cb in self.current_modal.state.mappings:
-                            if _key.match(ev.key.name.upper()):
-                                cb()
+                        for mappings in self.current_modal.state.mappings:
+                            if mappings.key.match(ev.key.name.upper()):
+                                mappings.callback()
                                 return True
 
             result = process()
-            self.update_status()
+            for _hook in self.hooks.on_keypress_finish:
+                _hook()
             return result
-
-    def update_status(self):
-        if self.current_modal.state is not None:
-            msg = f">>>>>  {self.current_modal.state.modal_name}\n\n"
-
-            msg += "\n".join(
-                f"Press [{k}] to {msg}"
-                for k, msg, _ in self.current_modal.state.mappings
-            )
-
-            msg += f"\n\n\n\nPress [{ModalState.quit_key}] to exit current modal"
-
-            self.status_bar.text = msg
-
-        else:
-            msg = "~~~~~~~~~~ Directory ~~~~~~~~~\n\n"
-            msg += "\n".join(
-                "Press [{key}] to {functionality}".format(
-                    key=cb.key, functionality=f"control {cb.modal_name}"
-                )
-                for cb in chain(
-                    *(p.keys for p in self.plugins if isinstance(p, ToggleableMixin))
-                )
-            )
-
-            self.status_bar.text = msg
 
     def register_plugin(self, plugin: VisualisablePlugin):
         self.plugins.append(plugin)

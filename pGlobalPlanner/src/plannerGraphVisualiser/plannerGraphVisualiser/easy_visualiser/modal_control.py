@@ -7,7 +7,13 @@ class Modal(enum.Enum):
 
 
 class Key:
-    def __init__(self, keys: Union[str, List[str]]):
+    KeyType = Union[Union[str, List[str]], "Key"]
+
+    def __init__(self, keys: KeyType):
+        if isinstance(keys, Key):
+            self._keys = list(keys._keys)
+            return
+
         if isinstance(keys, str):
             keys = [keys]
         self._keys = [k.upper() for k in keys]
@@ -21,17 +27,33 @@ class Key:
         return ",".join(self._keys)
 
 
+class Mapping:
+    MappingRawType = Tuple[Key.KeyType, str, Callable]
+
+    def __init__(
+        self, key: Key.KeyType, description: Union[str, Callable], callback: Callable
+    ):
+        self.key = Key(key)
+        self._description = description
+        self.callback = callback
+
+    @property
+    def description(self):
+        if isinstance(self._description, Callable):
+            return self._description()
+        return self._description
+
+
 class ModalControl:
     def __init__(
         self,
-        key: str,
-        mappings: List[Tuple[Union[str, Key], str, Callable]],
+        key: Key.KeyType,
+        mappings: List[Union[Mapping, Mapping.MappingRawType]],
         modal_name: str = None,
     ):
         self.key = Key(key)
-        self.mappings: List[Tuple[Key, str, Callable]] = [
-            (m[0], m[1], m[2]) if isinstance(m[0], Key) else (Key(m[0]), m[1], m[2])
-            for m in mappings
+        self.mappings: List[Mapping] = [
+            Mapping(m[0], m[1], m[2]) if isinstance(m, tuple) else m for m in mappings
         ]
         if any(ModalState.quit_key.match(data[0]) for data in mappings):
             raise ValueError("[q] cannot be mapped!")

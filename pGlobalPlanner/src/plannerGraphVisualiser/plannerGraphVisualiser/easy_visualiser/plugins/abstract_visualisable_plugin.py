@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import argparse
+from types import SimpleNamespace
 from typing import Dict, Type, TYPE_CHECKING
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     PluginState,
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class VisualisablePlugin(ABC):
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: argparse.Namespace, name: str = None):
         self.args = args
         self.visualiser: Visualiser = self.args.vis
         self.state = PluginState.EMPTY
@@ -21,10 +22,24 @@ class VisualisablePlugin(ABC):
         except AttributeError:
             VisualisablePlugin.__had_set_range = False
 
-    @property
-    @abstractmethod
-    def name(self):
+        try:
+            getattr(self, "name")
+        except AttributeError:
+            pass
+            if name is None:
+                name = self.__class__.__name__
+            self.name = name
+
+    def on_initialisation_finish(self):
+        """
+        Can use this time to register hooks on visualiser
+        :return:
+        """
         pass
+
+    @property
+    def other_plugins(self) -> SimpleNamespace:
+        return SimpleNamespace(**{p.name: p for p in self.visualiser.plugins})
 
     def update(self, force=False) -> None:
         """no overriding!"""
@@ -41,10 +56,6 @@ class VisualisablePlugin(ABC):
     def construct_plugin(self) -> bool:
         self.state = PluginState.ON
         return True
-
-    @property
-    def other_plugins_mapper(self) -> Dict[str, "VisualisablePlugin"]:
-        return {p.name: p for p in self.visualiser.plugins}
 
     def set_range(self, *args, **kwargs):
         self.args.view.camera.set_range(*args, **kwargs)
