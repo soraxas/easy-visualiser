@@ -11,7 +11,8 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
 from .easy_visualiser.plugin_capability import (
     ToggleableMixin,
     CallableAndFileModificationGuardableMixin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
+    PluginState,
 )
 from plannerGraphVisualiser.easy_visualiser.dummy import (
     DUMMY_COLOUR,
@@ -19,18 +20,27 @@ from plannerGraphVisualiser.easy_visualiser.dummy import (
     DUMMY_ARROW,
 )
 from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl, Key
+from .easy_visualiser.utils import ToggleableBool
 
 
 class VisualisableOceanCurrent(
     CallableAndFileModificationGuardableMixin,
     ToggleableMixin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
     VisualisablePlugin,
 ):
     currents = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        ocean_current_toggle: ToggleableBool,
+        ocean_current_datapath: str,
+        colormap: str = "plasma",
+    ):
+        super().__init__()
+        self.ocean_current_toggle = ocean_current_toggle
+        self.ocean_current_datapath = ocean_current_datapath
+        self.colormap = colormap
         self.keys = [
             ModalControl(
                 "o",
@@ -55,7 +65,7 @@ class VisualisableOceanCurrent(
                 modal_name="ocean current",
             )
         ]
-        self.guarding_callable = lambda: self.args.currents
+        self.guarding_callable = lambda: self.ocean_current_toggle
         self.ocean_current_max_scale = 60000
         self.ocean_current_scale = self.ocean_current_max_scale
 
@@ -70,7 +80,7 @@ class VisualisableOceanCurrent(
         self.__last_current_size = None
 
     def __toggle_currents_cb(self):
-        self.args.currents = not self.args.currents
+        self.ocean_current_toggle.toggle()
         self.toggle()
 
     def __change_currents_scale_cb(self, scale):
@@ -87,12 +97,12 @@ class VisualisableOceanCurrent(
         self.on_update()
 
     def on_update_guard(self) -> bool:
-        if not self.args.currents:
+        if not self.ocean_current_toggle:
             return False
         return super().on_update_guard()
 
     def __toggle_currents_animate_cb(self):
-        if not self.args.currents:
+        if not self.ocean_current_toggle:
             return
 
         if self.animate_timer.running:
@@ -102,7 +112,7 @@ class VisualisableOceanCurrent(
 
     @property
     def target_file(self) -> str:
-        return self.args.depth_datapath
+        return self.ocean_current_datapath
 
     @property
     def name(self):
@@ -116,20 +126,18 @@ class VisualisableOceanCurrent(
             antialias=True,
             arrow_size=3,
             arrow_type="angle_90",
-            parent=self.args.view.scene,
+            parent=self.visualiser.view.scene,
         )
 
     def __get_data(self) -> Dict:
-        currents_data: Dict = np.load(
-            self.args.current_datapath, allow_pickle=True
-        ).item()
+        currents_data: Dict = np.load(self.target_file, allow_pickle=True).item()
 
         if self.animate_timer.running:
             self.ocean_current_scale += 500
             if self.ocean_current_scale >= self.ocean_current_max_scale:
                 self.ocean_current_scale = 0
 
-        currents_data["z"] = self.args.z_scaler(currents_data["z"])
+        currents_data["z"] = self.other_plugins.zscaler.scaler(currents_data["z"])
 
         self.__last_current_size = currents_data["x"].shape[0]
         if self.__choices_size is None:
@@ -156,7 +164,7 @@ class VisualisableOceanCurrent(
             "z"
         ]  # + self.ocean_current_scale * currents_data['w']
 
-        cmap = get_colormap(self.args.colormap)
+        cmap = get_colormap(self.colormap)
 
         norm = np.sqrt(currents_data["u"] ** 2 + currents_data["v"] ** 2)
 
@@ -189,16 +197,18 @@ class VisualisableOceanCurrent(
         arrow_color = _data.pop("arrow_color")
         self.currents.set_data(**_data)
         self.currents.arrow_color = arrow_color
+        self.currents.visible = True
         self.animate_timer.start()
 
     def turn_off_plugin(self):
         super().turn_off_plugin()
-        self.currents.set_data(
-            pos=DUMMY_LINE,
-            color=DUMMY_COLOUR,
-            arrows=DUMMY_ARROW,
-        )
-        self.currents.arrow_color = DUMMY_COLOUR
+        # self.currents.set_data(
+        #     pos=DUMMY_LINE,
+        #     color=DUMMY_COLOUR,
+        #     arrows=DUMMY_ARROW,
+        # )
+        # self.currents.arrow_color = DUMMY_COLOUR
+        self.currents.visible = False
         self.animate_timer.stop()
 
     def on_update(self):

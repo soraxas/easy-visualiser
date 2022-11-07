@@ -6,7 +6,7 @@ from vispy.color import get_colormap
 
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
 )
 from .easy_visualiser.plugin_capability import (
     ToggleableMixin,
@@ -15,6 +15,7 @@ from .easy_visualiser.plugin_capability import (
 from plannerGraphVisualiser.easy_visualiser.dummy import DUMMY_AXIS_VAL
 from plannerGraphVisualiser.gridmesh import FixedGridMesh
 from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
+from .easy_visualiser.utils import ToggleableBool
 
 
 def create_grid_mesh(
@@ -50,16 +51,24 @@ def create_grid_mesh(
 class VisualisableBathy(
     CallableAndFileModificationGuardableMixin,
     ToggleableMixin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
     VisualisablePlugin,
 ):
     bathy_mesh = None
     bathy_interp: NearestNDInterpolator = None
     last_min_pos = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.guarding_callable = lambda: self.args.bathymetry
+    def __init__(
+        self,
+        bathy_toggle: ToggleableBool,
+        bathy_colorscale_toggle: ToggleableBool,
+        depth_datapath: str,
+    ):
+        super().__init__()
+        self.bathy_toggle = bathy_toggle
+        self.bathy_colorscale_toggle = bathy_colorscale_toggle
+        self.depth_datapath = depth_datapath
+        self.guarding_callable = lambda: self.bathy_toggle
         self.keys = [
             ModalControl(
                 "b",
@@ -76,11 +85,11 @@ class VisualisableBathy(
         ]
 
     def __toggle_bathy_cb(self):
-        self.args.bathymetry = not self.args.bathymetry
+        self.bathy_toggle.toggle()
         self.toggle()
 
     def __toggle_bathy_colour_scale_cb(self):
-        self.args.bathymetry_colour_scale = not self.args.bathymetry_colour_scale
+        self.bathy_colorscale_toggle.toggle()
         self._last_modify_time = None
         self.update()
 
@@ -90,7 +99,7 @@ class VisualisableBathy(
 
     @property
     def target_file(self) -> str:
-        return self.args.depth_datapath
+        return self.depth_datapath
 
     def construct_plugin(self) -> None:
         super().construct_plugin()
@@ -103,7 +112,7 @@ class VisualisableBathy(
             # shading='flat',
             # shading=None,
             # color='blue',
-            parent=self.args.view.scene,
+            parent=self.visualiser.view.scene,
         )
 
     def __get_data(self) -> Dict:
@@ -113,7 +122,7 @@ class VisualisableBathy(
         # cache interp
         self.bathy_interp = NearestNDInterpolator(
             list(zip(bathymetry[:, 0], bathymetry[:, 1])),
-            self.args.z_scaler(bathymetry[:, 2]),
+            self.other_plugins.zscaler.scaler(bathymetry[:, 2]),
         )
         ###########################################
 
@@ -126,14 +135,14 @@ class VisualisableBathy(
 
         xx, yy = np.meshgrid(xx, yy, indexing="xy")
 
-        zz = self.args.z_scaler(zz)
+        zz = self.other_plugins.zscaler.scaler(zz)
 
         data = dict(
             xs=xx,
             ys=yy,
             zs=zz,
         )
-        if self.args.bathymetry_colour_scale:
+        if self.bathy_colorscale_toggle:
             cmap = get_colormap("jet")
             colours = cmap.map((zz - zz.min()) / (zz.max() - zz.min()))
             data["colors"] = colours.reshape(grid_size, grid_size, 4)
@@ -145,7 +154,7 @@ class VisualisableBathy(
 
     def turn_off_plugin(self):
         super().turn_off_plugin()
-        if not self.args.bathymetry_colour_scale:
+        if not self.bathy_colorscale_toggle:
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors = None
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors_indexed_by_faces = (
                 None
@@ -159,7 +168,7 @@ class VisualisableBathy(
     def on_update(self):
         self.turn_on_plugin()
 
-        if not self.args.bathymetry_colour_scale:
+        if not self.bathy_colorscale_toggle:
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors = None
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors_indexed_by_faces = (
                 None

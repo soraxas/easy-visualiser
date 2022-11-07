@@ -1,9 +1,9 @@
+from types import SimpleNamespace
+
 import dataclasses
-from vispy.color import get_colormap
+from vispy import scene, app
 
-from typing import List, Tuple, Dict, Callable
-
-from .utils import AxisScaler
+from typing import List, Tuple, Dict, Callable, Optional
 
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
@@ -25,30 +25,38 @@ class Visualiser:
 
     def __init__(
         self,
-        args,
+        title="untitled",
     ):
-        self.args = args
+        # Display the data
+        self.canvas = scene.SceneCanvas(title=title, keys="interactive", show=True)
+        self.view = self.canvas.central_widget.add_view()
+        self.view.camera = "turntable"
+        self.view.camera.aspect = 1
 
-        self.start_markers = None
-        self.goal_markers = None
-        self.axis_visual = None
         self.current_modal = ModalState()
         self.hooks = VisualiserHooks([], [])
+        # build grid
+        self.grid = self.canvas.central_widget.add_grid(margin=10)
+        # # col num just to make it on the right size (0 is left)
+        # self.grid.add_widget(col=10)
 
-        self.args.z_scaler = AxisScaler(scale_factor=self.args.z_scale_factor)
-
-        # colormap = get_colormap("viridis")
-        # colormap = get_colormap("jet")
-        # colormap = get_colormap("plasma")
-        args.colormap = get_colormap(args.colormap)
-
-        self.grid = args.canvas.central_widget.add_grid(margin=10)
-        # col num just to make it on the right size (0 is left)
-        self.grid.add_widget(col=10)
-
+        self._registered_plugins_mappings: Optional[SimpleNamespace] = None
         self.initialised = False
 
     def initialise(self):
+        ###########################################################
+        # on initialisation hooks
+        for plugin in self.plugins:
+            try:
+                plugin.on_initialisation(visualiser=self)
+            except VisualisablePluginInitialisationError as e:
+                print(f"{plugin}: on initialisation.\n{e}")
+        self._registered_plugins_mappings = SimpleNamespace(
+            **{p.name: p for p in self.plugins}
+        )
+
+        ###########################################################
+        # build plugin
         for plugin in self.plugins:
             try:
                 ###########################################################
@@ -61,16 +69,14 @@ class Visualiser:
                 if plugin.construct_plugin():
                     plugin.state = PluginState.OFF
                 ###########################################################
-                # register hooks
-                plugin.on_initialisation_finish()
-                ###########################################################
 
             except VisualisablePluginInitialisationError as e:
                 print(str(e))
+
         for hook in self.hooks.on_initialisation_finish:
             hook()
 
-        @self.args.canvas.connect
+        @self.canvas.connect
         def on_key_press(ev):
             def process():
                 # print(ev.key.name)
@@ -107,7 +113,24 @@ class Visualiser:
     def register_plugin(self, plugin: VisualisablePlugin):
         self.plugins.append(plugin)
 
-    def update(self):
+    def interval_update(self):
         for plugin in self.plugins:
-            plugin.update()
+            if plugin.state is PluginState.ON:
+                plugin.update()
         self.initialised = True
+
+    @property
+    def registered_plugins_mappings(self) -> SimpleNamespace:
+        if self._registered_plugins_mappings is None:
+            raise RuntimeError("Visualiser has not been initialised yet!")
+        return self._registered_plugins_mappings
+
+    def run(self, regular_update_interval: Optional[float] = None):
+        if regular_update_interval:
+            timer = app.Timer(
+                interval=regular_update_interval,
+                connect=lambda ev: self.interval_update(),
+                start=True,
+            )
+        self.interval_update()  # initial update
+        app.run()

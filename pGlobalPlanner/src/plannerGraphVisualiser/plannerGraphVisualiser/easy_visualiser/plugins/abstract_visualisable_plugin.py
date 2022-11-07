@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from typing import Dict, Type, TYPE_CHECKING
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     PluginState,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
     GuardableMixin,
 )
 
@@ -13,14 +13,11 @@ if TYPE_CHECKING:
 
 
 class VisualisablePlugin(ABC):
-    def __init__(self, args: argparse.Namespace, name: str = None):
-        self.args = args
-        self.visualiser: Visualiser = self.args.vis
+    visualiser: "Visualiser"
+    __had_set_range: bool = False
+
+    def __init__(self, name: str = None):
         self.state = PluginState.EMPTY
-        try:
-            VisualisablePlugin.__had_set_range
-        except AttributeError:
-            VisualisablePlugin.__had_set_range = False
 
         try:
             getattr(self, "name")
@@ -30,21 +27,21 @@ class VisualisablePlugin(ABC):
                 name = self.__class__.__name__
             self.name = name
 
-    def on_initialisation_finish(self):
+    def on_initialisation(self, visualiser: "Visualiser"):
         """
         Can use this time to register hooks on visualiser
         :return:
         """
-        pass
+        self.visualiser = visualiser
 
     @property
     def other_plugins(self) -> SimpleNamespace:
-        return SimpleNamespace(**{p.name: p for p in self.visualiser.plugins})
+        return self.visualiser.registered_plugins_mappings
 
     def update(self, force=False) -> None:
         """no overriding!"""
         if not force:
-            if not isinstance(self, UpdatableMixin):
+            if not isinstance(self, IntervalUpdatableMixin):
                 return
 
             if isinstance(self, GuardableMixin):
@@ -58,12 +55,12 @@ class VisualisablePlugin(ABC):
         return True
 
     def set_range(self, *args, **kwargs):
-        self.args.view.camera.set_range(*args, **kwargs)
-        VisualisablePlugin._had_set_range = True
+        self.visualiser.view.camera.set_range(*args, **kwargs)
+        self.__class__.__had_set_range = True
 
     @property
     def had_set_range(self) -> bool:
-        return VisualisablePlugin.__had_set_range
+        return self.__class__.__had_set_range
 
 
 class VisualisablePluginInitialisationError(Exception):

@@ -74,10 +74,10 @@ class VisualisableMoosSwarm(
     bathy_mesh = None
     bathy_intert: NearestNDInterpolator = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, swarm_model_type: str):
+        super().__init__(swarm_model_type)
         # cast string arg to enum
-        self.args.swarm_model_type = SwarmModelType[self.args.swarm_model_type]
+        self.swarm_model_type = SwarmModelType[swarm_model_type]
 
         self.moos = pMoosPlannerVisualiser.get_instance()
         self.moos.register_variable(
@@ -156,15 +156,11 @@ class VisualisableMoosSwarm(
     def name(self):
         return "moos_swarm"
 
-    @property
-    def target_file(self) -> str:
-        return self.args.depth_datapath
-
     def construct_plugin(self) -> None:
         super().construct_plugin()
 
         # self.axis_visual = XYZAxis(
-        #     parent=self.args.view.scene,
+        #     parent=self.visualiser.view.scene,
         #     width=5,
         # )
 
@@ -179,7 +175,7 @@ class VisualisableMoosSwarm(
         if len(self.vehicles) < 1:
             return
         poses = np.array([v.pos for v in self.vehicles.values()])
-        poses[:, 2] = self.args.z_scaler(poses[:, 2])
+        poses[:, 2] = self.other_plugins.zscaler.scaler(poses[:, 2])
 
         margin = 200
         bounds = np.stack([poses.min(0) - margin, poses.max(0) + margin]).T
@@ -188,15 +184,15 @@ class VisualisableMoosSwarm(
 
     def __center_view(self):
         poses = np.array([v.pos for v in self.vehicles.values()])
-        poses[:, 2] = self.args.z_scaler(poses[:, 2])
-        self.args.view.camera.center = np.array(poses).mean(0)
+        poses[:, 2] = self.other_plugins.zscaler.scaler(poses[:, 2])
+        self.visualiser.view.camera.center = np.array(poses).mean(0)
 
     def __change_swarm_appearance_cb(self):
-        val = self.args.swarm_model_type.value
+        val = self.swarm_model_type.value
         val += 1
         if val >= SwarmModelType.END_OF_ENUM.value:
             val = 0
-        self.args.swarm_model_type = SwarmModelType(val)
+        self.swarm_model_type = SwarmModelType(val)
         for visual in self.vehicle_visual.values():
             visual.parent = None
             del visual
@@ -206,7 +202,7 @@ class VisualisableMoosSwarm(
     def on_update_guard(self) -> bool:
         return (
             self.other_plugins.bathymetry.last_min_pos is not None
-            and self.args.vis.initialised
+            and self.visualiser.initialised
         )
 
     def refresh(self):
@@ -222,7 +218,7 @@ class VisualisableMoosSwarm(
 
         for n, v in self.vehicles.items():
             if v.name not in self.vehicle_visual:
-                with open(SWARM_MODEL_MAPPING[self.args.swarm_model_type], "rb") as f:
+                with open(SWARM_MODEL_MAPPING[self.swarm_model_type], "rb") as f:
                     data = vispy.io.stl.load_stl(f)
                 vertices, faces, normals = (
                     data["vertices"],
@@ -233,14 +229,14 @@ class VisualisableMoosSwarm(
                 #     symbol="triangle_up",
                 #     # faces=faces,
                 #     # color=(0.5, 0.7, 0.5, 1),
-                #     parent=self.args.view.scene,
+                #     parent=self.visualiser.view.scene,
                 #     # shading="smooth",
                 # )
                 self.vehicle_visual[v.name] = Mesh(
                     vertices=vertices,
                     faces=faces,
                     color=(0.5, 0.7, 0.5, 1),
-                    parent=self.args.view.scene,
+                    parent=self.visualiser.view.scene,
                     shading="smooth",
                 )
 
@@ -259,7 +255,7 @@ class VisualisableMoosSwarm(
             # self.vehicle_visual[v.name].transform.scale([self.vehicle_scale] * 3)
             # # # Create a colored `MeshVisual`.
             # # mesh = Mesh(vertices, faces, color=(.5, .7, .5, 1),
-            # #             parent=self.args.view.scene,
+            # #             parent=self.visualiser.view.scene,
             # #             shading='smooth')
             # # self.vehicle_visual[v.name].transform.rotate(90, (1, 0, 0))
             #
@@ -270,7 +266,7 @@ class VisualisableMoosSwarm(
             # # view.add(self.vehicle_visual[v.name])
             # # print(self.vehicles[v.name])
             pos = self.vehicles[v.name].pos
-            pos[2] = self.args.z_scaler(pos[2])
+            pos[2] = self.other_plugins.zscaler.scaler(pos[2])
             # print(np.array(pos).reshape(1, -1))
 
             # self.vehicle_visual[v.name].set_data(
@@ -287,7 +283,7 @@ class VisualisableMoosSwarm(
 
             # scale the pitch angle according to the z axis exaggerated scale
             _scaled_pitch_angle = math.atan(
-                self.args.z_scaler(math.tan(self.current_vehicle_angle))
+                self.other_plugins.zscaler.scaler(math.tan(self.current_vehicle_angle))
             )
 
             self.vehicle_visual[v.name].transform.rotate(

@@ -19,7 +19,8 @@ from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
 class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):
     status_bar: scene.Label
 
-    def on_initialisation_finish(self):
+    def on_initialisation(self, *args, **kwargs):
+        super().on_initialisation(*args, **kwargs)
         self.visualiser.hooks.on_initialisation_finish.append(self.update_status)
         self.visualiser.hooks.on_keypress_finish.append(self.update_status)
 

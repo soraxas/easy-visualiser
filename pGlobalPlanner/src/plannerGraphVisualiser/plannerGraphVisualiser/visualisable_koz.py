@@ -5,13 +5,13 @@ import numpy as np
 from scipy.interpolate import griddata
 from vispy import scene
 
-from plannerGraphVisualiser import get_keepout_zones
+from plannerGraphVisualiser import KeepoutZone
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
 from .easy_visualiser.plugin_capability import (
     FileModificationGuardableMixin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
 )
 from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
 
@@ -48,12 +48,16 @@ def create_grid_mesh(
 
 
 class VisualisableKOZ(
-    FileModificationGuardableMixin, UpdatableMixin, VisualisablePlugin
+    FileModificationGuardableMixin, IntervalUpdatableMixin, VisualisablePlugin
 ):
     keepout_zone_mesh = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        graph_data_path: str,
+    ):
+        super().__init__()
+        self.data_path = graph_data_path
 
     @property
     def name(self):
@@ -61,14 +65,14 @@ class VisualisableKOZ(
 
     @property
     def target_file(self) -> str:
-        return self.args.datapath
+        return self.data_path
 
     def construct_plugin(self) -> None:
         super().construct_plugin()
         self.keepout_zone_mesh = scene.Mesh(
             # vertices=[],
             # faces=[],
-            parent=self.args.view.scene,
+            parent=self.visualiser.view.scene,
             # color=(.5, .5, .5),
             color=(0.5, 0.5, 0.5, 0.7),
         )
@@ -80,11 +84,9 @@ class VisualisableKOZ(
         faces = []
 
         try:
-            bathy_vis: VisualisableBathy = self.other_plugins.bathymetry
-
-            keepout_zones = get_keepout_zones(self.args, bathy_vis.bathy_interp)
-            # for k in keepout_zones:
-            #     k.depth = min(k.depth, AVG_OCEAN_DEPTH)
+            keepout_zones = self.__get_keepout_zones(
+                self.other_plugins.bathymetry.bathy_interp
+            )
 
         except zipfile.BadZipFile as e:
             print(e)
@@ -99,9 +101,23 @@ class VisualisableKOZ(
         if len(keepout_zones) > 0:
             vertices = np.array(vertices)
             _faces = np.array(_faces)
-            self.args.z_scaler(vertices)
+            self.other_plugins.zscaler.scaler(vertices)
 
             self.keepout_zone_mesh.set_data(
                 vertices=vertices,
                 faces=np.array(faces),
             )
+
+    def __get_keepout_zones(self, bathy_interp):
+        pdata = np.load(self.target_file)
+
+        return [
+            KeepoutZone(
+                depth=self.other_plugins.zscaler.scaler(
+                    pdata["keepout_zones_depths"][i]
+                ),
+                points=pdata[f"keepout_zones_{i}"],
+                bathy_interp=bathy_interp,
+            )
+            for i in range(len(pdata["keepout_zones_depths"]))
+        ]

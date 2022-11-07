@@ -25,13 +25,15 @@ class ToggleableMixin:
     state: PluginState
     construct_plugin: Callable
 
-    def toggle(self) -> None:
+    def toggle(self) -> bool:
         if self.state is PluginState.EMPTY:
             self.construct_plugin()
         elif self.state is PluginState.ON:
             self.turn_off_plugin()
+            return True
         else:
             self.turn_on_plugin()
+            return False
 
     @abstractmethod
     def turn_off_plugin(self):
@@ -66,7 +68,7 @@ class FileModificationGuardableMixin(GuardableMixin):
         raise NotImplementedError()
 
 
-class CallableAndFileModificationGuardableMixin(FileModificationGuardableMixin):
+class CallableAndFileModificationGuardableMixin(FileModificationGuardableMixin, ABC):
     guarding_callable: Callable
 
     def on_update_guard(self) -> bool:
@@ -75,7 +77,7 @@ class CallableAndFileModificationGuardableMixin(FileModificationGuardableMixin):
         return super().on_update_guard()
 
 
-class UpdatableMixin:
+class IntervalUpdatableMixin:
     @abstractmethod
     def on_update(self) -> None:
         pass

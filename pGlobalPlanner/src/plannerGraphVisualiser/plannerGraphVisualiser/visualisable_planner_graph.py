@@ -1,5 +1,9 @@
+from typing import Optional
+
 import numpy as np
-from plannerGraphVisualiser import get_latest_pdata, mean_confidence_interval
+from vispy.color import get_colormap
+
+from plannerGraphVisualiser import mean_confidence_interval
 from vispy import scene
 
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
@@ -7,7 +11,7 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
 )
 from .easy_visualiser.plugin_capability import (
     ToggleableMixin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
     CallableAndFileModificationGuardableMixin,
     WidgetsMixin,
 )
@@ -17,6 +21,7 @@ from plannerGraphVisualiser.easy_visualiser.dummy import (
     DUMMY_COLOUR,
 )
 from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
+from .easy_visualiser.utils import ToggleableBool, boolean_to_onoff
 
 
 class SolutionLine:
@@ -46,46 +51,80 @@ class VisualisablePlannerGraph(
     CallableAndFileModificationGuardableMixin,
     WidgetsMixin,
     ToggleableMixin,
-    UpdatableMixin,
+    IntervalUpdatableMixin,
     VisualisablePlugin,
 ):
     lines = None
     cbar_widget: scene.ColorBarWidget
     __had_set_range: bool = False
+    sol_lines: SolutionLine
+    fake_sol_lines: SolutionLine
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        graph_data_path: str,
+        graph_toggle: ToggleableBool,
+        graph_solution_toggle: ToggleableBool,
+        graph_solution_extra_toggle: ToggleableBool,
+        use_ci: bool = True,
+        cost_min: Optional[float] = None,
+        cost_max: Optional[float] = None,
+        colormap: str = "plasma",
+    ):
+        super().__init__()
         self.guarding_callable = lambda: True
+        self.graph_data_path = graph_data_path
+        self.graph_toggle = graph_toggle
+        self.graph_solution_toggle = graph_solution_toggle
+        self.graph_solution_extra_toggle = graph_solution_extra_toggle
+        self.use_ci = use_ci
+        self.colormap = get_colormap(colormap)
+        self.cost_min = cost_min
+        self.cost_max = cost_max
+
+        self.cost_index: Optional[int] = None
 
         self.keys = [
             ModalControl(
                 "p",
                 [
-                    ("g", "toggle planner graph", self.__toggle_graph_cb),
-                    ("s", "toggle planner solution", self.__toggle_solution_cb),
-                    ("c", "switch cost index", self.__switch_cost_cb),
+                    (
+                        "g",
+                        lambda: f"toggle planner graph [{boolean_to_onoff(self.graph_toggle)}]",
+                        self.__toggle_graph_cb,
+                    ),
+                    (
+                        "s",
+                        lambda: f"toggle planner solution [{boolean_to_onoff(self.graph_solution_toggle)}]",
+                        self.__toggle_solution_cb,
+                    ),
+                    (
+                        "c",
+                        lambda: f"switch cost index [{'all' if self.cost_index is None else self.cost_index}]",
+                        self.__switch_cost_cb,
+                    ),
                 ],
                 modal_name="global planner graph",
             )
         ]
-        self.sol_lines = SolutionLine(self.args.view.scene)
-        # if self.args.extra_sol:
-        self.fake_sol_lines = SolutionLine(self.args.view.scene, offset=200000)
 
     def __toggle_graph_cb(self):
-        self.args.graph = not self.args.graph
-        self.args.extra_sol = not self.args.graph
-        self.toggle()
+        self.graph_toggle.toggle()
+        self.graph_solution_extra_toggle.set(not self.graph_toggle.get())
+        if self.graph_toggle:
+            self.turn_on_plugin()
+        else:
+            self.turn_off_plugin()
 
     def __toggle_solution_cb(self):
-        self.args.graph_solution = not self.args.graph_solution
+        self.graph_solution_toggle.toggle()
         self.on_update()
 
     def get_constructed_widgets(self):
         cbar_widget = scene.ColorBarWidget(
             label="Cost",
             clim=(0, 99),
-            cmap=self.args.colormap,
+            cmap=self.colormap,
             orientation="right",
             border_width=1,
             label_color="#ffffff",
@@ -100,22 +139,24 @@ class VisualisablePlannerGraph(
 
     @property
     def target_file(self):
-        return self.args.datapath
+        return self.graph_data_path
 
     def construct_plugin(self) -> None:
         super().construct_plugin()
-        self.args.extra_sol = not self.args.graph
+        self.sol_lines = SolutionLine(self.visualiser.view.scene)
+        self.fake_sol_lines = SolutionLine(self.visualiser.view.scene, offset=200000)
+        self.graph_solution_extra_toggle.set(not self.graph_toggle.get())
         self.lines = scene.Line(
-            antialias=False, method="gl", parent=self.args.view.scene, width=3
+            antialias=False, method="gl", parent=self.visualiser.view.scene, width=3
         )
         self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
         self.cbar_widget.clim = (np.nan, np.nan)
 
     def __switch_cost_cb(self) -> None:
-        if self.args.cost_index is None:
-            self.args.cost_index = 0
+        if self.cost_index is None:
+            self.cost_index = 0
         else:
-            self.args.cost_index += 1
+            self.cost_index += 1
         self._last_modify_time = None
         self.update()
 
@@ -123,17 +164,17 @@ class VisualisablePlannerGraph(
         #################################################
         #################################################
 
-        if self.args.use_ci:
+        if self.use_ci:
             _mean, _min, _max = mean_confidence_interval(costs)
         else:
             _min = costs.min()
             _max = costs.max()
 
         _min = 0
-        if self.args.min is not None:
-            _min = self.args.min
-        if self.args.max is not None:
-            _max = self.args.max
+        if self.cost_min is not None:
+            _min = self.cost_min
+        if self.cost_max is not None:
+            _max = self.cost_max
 
         if np.isnan(_max):
             _max = np.nanmax(costs[costs != np.inf])
@@ -150,16 +191,16 @@ class VisualisablePlannerGraph(
         #################################################
         #################################################
 
-        colors = self.args.colormap.map(costs)  # [:-2]
+        colors = self.colormap.map(costs)  # [:-2]
 
         self.lines.set_data(pos=pos, connect=edges, color=colors)
         self.cbar_widget.clim = (_min, _max)
 
     def __construct_solution(self, solution_path) -> None:
-        if not self.args.graph_solution:
+        if not self.graph_solution_toggle:
             solution_path = []
         self.sol_lines.set_path(solution_path)
-        if self.args.extra_sol and self.args.graph:
+        if self.graph_solution_toggle and self.graph_toggle:
             fake_solution_path = solution_path.copy()
             self.fake_sol_lines.set_path(fake_solution_path)
         else:
@@ -167,9 +208,8 @@ class VisualisablePlannerGraph(
 
     def turn_on_plugin(self):
         super().turn_on_plugin()
-        pos, edges, solution_path, costs = get_latest_pdata(self.args)
-
-        if self.args.graph:
+        pos, edges, solution_path, costs = self.get_latest_pdata()
+        if self.graph_toggle:
             self.__construct_graph(pos, edges, costs)
         self.__construct_solution(solution_path)
 
@@ -184,3 +224,64 @@ class VisualisablePlannerGraph(
         self.turn_on_plugin()
         if not self.had_set_range:
             self.set_range()
+
+    def get_latest_pdata(self):
+        pdata = np.load(self.target_file)
+
+        pos = pdata["vertices_coordinate"]
+        solution_path = pdata["solution_coordinate"]
+
+        _min = pos[:, 2].min()
+        # z_scaler.set_min(_min)
+
+        # apply z scale
+
+        pos[:, 2] = self.other_plugins.zscaler.scaler(pos[:, 2])
+        if len(solution_path) > 0:
+            solution_path[:, 2] = self.other_plugins.zscaler.scaler(solution_path[:, 2])
+
+        edges = pdata["edges"]
+
+        if (
+            self.cost_index is not None
+            and self.cost_index >= pdata["vertices_costs"].shape[1]
+        ):
+            self.cost_index = None
+
+        if self.cost_index is None:
+            _target_costs = pdata["vertices_costs"].copy().sum(1)
+        else:
+            _target_costs = pdata["vertices_costs"][:, self.cost_index].copy()
+
+        self.cbar_widget.label = (
+            f"Cost {'all' if self.cost_index is None else self.cost_index}"
+        )
+
+        # if start_markers is None:
+        #     start_coor = []
+        #     for idx in pdata["start_vertices_id"]:
+        #         start_coor.append(pos[idx])
+        #     start_coor = np.array(start_coor)
+        #
+        #     goal_coor = []
+        #     for idx in pdata["goal_vertices_id"]:
+        #         goal_coor.append(pos[idx])
+        #     goal_coor = np.array(goal_coor)
+        #     start_markers = scene.Markers(
+        #         pos=start_coor,
+        #         face_color="green",
+        #         symbol="o",
+        #         parent=args.view.scene,
+        #         size=20,
+        #     )
+        #     goal_markers = scene.Markers(
+        #         pos=goal_coor, face_color="red", symbol="o", parent=args.view.scene,
+        #         size=20
+        #     )
+
+        # print(_min, _max)
+
+        # colors = np.ones((len(_target_costs), 3)) * .1
+        # colors[:,0] = (_target_costs - _min) / (_max - _min)
+
+        return pos, edges, solution_path, _target_costs  # , _min, _max

@@ -17,11 +17,10 @@ class VisualisablePrincipleAxis(VisualisablePlugin):
 
     def __init__(
         self,
-        *args,
         axis_length: float = 1,
-        origin: np.array = np.array([0, 0, 0], dtype=np.float)
+        origin: np.array = np.array([0, 0, 0], dtype=np.float),
     ):
-        super().__init__(*args)
+        super().__init__()
         self.axis_length = axis_length
         self._set_origin(origin, update_display=False)
 
@@ -39,7 +38,7 @@ class VisualisablePrincipleAxis(VisualisablePlugin):
         super().construct_plugin()
 
         self.axis_visual = XYZAxis(
-            parent=self.args.view.scene,
+            parent=self.visualiser.view.scene,
             width=5,
         )
         self.axis_visual.set_data(pos=self._axis_pos)
