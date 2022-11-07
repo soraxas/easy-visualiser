@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict
 
+from tap import Tap
 from vispy import app, scene
 from vispy.plot import PlotWidget
 import numpy as np
@@ -9,9 +10,13 @@ from icecream import ic
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     WidgetsMixin,
     ToggleableMixin,
+    WidgetOption,
 )
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
+)
+from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
+    VisualisableStatusBar,
 )
 from .easy_visualiser.modal_control import ModalControl
 from .easy_visualiser.modded_components import (
@@ -45,16 +50,15 @@ class Plottable:
         force_using_timestep=None,
     ):
         variable = self._get_var(var)
+        _var = variable
+        if force_using_timestep is not None:
+            _var = variable[force_using_timestep : force_using_timestep + 1, ...]
+        array = np.array(_var).astype(np.float32)
         if filter_valid:
             valid_range = variable.valid_range
-        if filter_missing:
-            missing_value = variable.missing_value
-        if force_using_timestep is not None:
-            variable = variable[force_using_timestep : force_using_timestep + 1, ...]
-        array = np.array(variable).astype(np.float32)
-        if filter_valid:
             array[(array < valid_range[0]) | (array > valid_range[1])] = fill_value
         if filter_missing:
+            missing_value = variable.missing_value
             array[array == missing_value] = fill_value
         return array
 
@@ -287,10 +291,26 @@ class VisualisableVolumePlot(WidgetsMixin, VisualisablePlugin):
 from skimage.transform import resize
 
 if __name__ == "__main__":
+    ##################################################
+    # gather data
+    class SoundSpeedProfileArgParser(Tap):
+        netcdf_path: str
+
+        def configure(self):
+            self.add_argument(
+                "netcdf_path",
+                metavar="NETCDF",
+                type=str,
+                nargs="?",
+                default="/home/tin/work/dataset/9308_out_cf-396MB-WAXA.nc",
+            )
+
+    args = SoundSpeedProfileArgParser().parse_args()
+
     dataset = netCDF4.Dataset(
-        "/home/tin/work/dataset/9308_out_cf-396MB-WAXA.nc",
+        args.netcdf_path,
     )
-    dataset = netCDF4.Dataset("/home/tin/work/dataset/lombok_out_cf.nc")
+    # dataset = netCDF4.Dataset("/home/tin/work/dataset/lombok_out_cf.nc")
     texture_format = "auto"  # None for CPUScaled, "auto" for GPUScaled
 
     plottable = Plottable(dataset, "sound")
@@ -306,42 +326,30 @@ if __name__ == "__main__":
     sound_speed = sound_speed[0, ...]
     sound_speed = np.moveaxis(sound_speed, 0, -1)
 
-    botz = plottable.get_array("botz", filter_missing=True)
-    visualiser = Visualiser("netcdf sound speed profile viewer")
-
     scale = 2
+    botz = plottable.get_array("botz", filter_missing=True)
     botz = np.rollaxis(botz, 1)
     botz = -botz
     botz = resize(botz, (botz.shape[0] * scale, botz.shape[1] * scale))
 
-    #############################################
-    sound_speed = plottable.get_array(
-        "sound",
-        filter_valid=True,
-        force_using_timestep=1,
-        # fill_value=plottable.get_array("sound").min()
-        fill_value=np.nan,
-        # fill_value=1000
-    )
-    sound_speed = sound_speed[0, ...]
-    sound_speed = np.moveaxis(sound_speed, 0, -1)
-    visualiser.register_plugin(
-        VisualisableVolumePlot(np.flipud(np.rollaxis(sound_speed, 1)))
-    )
-    #############################################
-    sound_speed = plottable.get_array(
-        "sound",
-        filter_valid=True,
-        force_using_timestep=1,
-        # fill_value=plottable.get_array("sound").min()
-        fill_value=np.nan,
-        # fill_value=1000
-    )
     zc = plottable.get_array("zc")
     zc_bounds = [zc.min(), 100]
 
-    sound_speed = sound_speed[0, ...]
-    sound_speed = np.moveaxis(sound_speed, 0, -1)
+    #############################################
+
+    visualiser = Visualiser("netcdf sound speed profile viewer")
+
+    visualiser.register_plugin(
+        VisualisableVolumePlot(np.flipud(np.rollaxis(sound_speed, 1)))
+    )
+    visualiser.register_plugin(
+        VisualisableStatusBar(
+            widget_option=WidgetOption(
+                row=1,
+                col=1,
+            )
+        )
+    )
     visualiser.register_plugin(
         VisualisableLinePlot(
             bounds=dict(

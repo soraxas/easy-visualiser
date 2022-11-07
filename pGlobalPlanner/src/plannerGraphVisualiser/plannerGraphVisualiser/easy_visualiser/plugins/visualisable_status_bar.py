@@ -1,7 +1,7 @@
 from itertools import chain
 from tkinter import Widget
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from vispy import scene
 
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
@@ -18,6 +18,16 @@ from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
 
 class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):
     status_bar: scene.Label
+
+    def __init__(self, widget_option: Optional[WidgetOption] = None):
+        super().__init__()
+        if widget_option is None:
+            widget_option = WidgetOption(
+                col=0,
+                row=0,
+                row_span=1,
+            )
+        self.widget_option = widget_option
 
     def on_initialisation(self, *args, **kwargs):
         super().on_initialisation(*args, **kwargs)
@@ -65,10 +75,6 @@ class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):
         return [
             (
                 self.status_bar,
-                WidgetOption(
-                    col=0,
-                    row=0,
-                    row_span=1,
-                ),
+                self.widget_option,
             )
         ]
