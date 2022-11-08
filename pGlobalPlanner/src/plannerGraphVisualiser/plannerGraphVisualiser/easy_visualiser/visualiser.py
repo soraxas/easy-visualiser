@@ -10,7 +10,7 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
     VisualisablePluginInitialisationError,
 )
 from .plugin_capability import ToggleableMixin, WidgetsMixin, PluginState, WidgetOption
-from .modal_control import ModalControl, ModalState
+from .modal_control import ModalControl, ModalState, Mapping
 
 
 @dataclasses.dataclass
@@ -33,7 +33,7 @@ class Visualiser:
         self.view.camera = "turntable"
         self.view.camera.aspect = 1
 
-        self.current_modal = ModalState()
+        self.current_modal = ModalState(visualiser=self)
         self.hooks = VisualiserHooks([], [])
         # build grid
         self.grid = self.canvas.central_widget.add_grid(margin=10)
@@ -65,6 +65,22 @@ class Visualiser:
                     for widget, data in plugin.get_constructed_widgets():
                         self.grid.add_widget(widget, **data)
                 ###########################################################
+                # extract root mappings
+                if isinstance(plugin, ToggleableMixin):
+                    _new_keys: List[ModalControl] = []
+                    for key in plugin.keys:
+                        if isinstance(key, ModalControl):
+                            _new_keys.append(key)
+                        else:
+                            # mapping type
+                            self.current_modal.add_root_mapping(
+                                Mapping(key[0], key[1], key[2])
+                                if isinstance(key, tuple)
+                                else key
+                            )
+                    plugin.keys = _new_keys
+
+                ###########################################################
                 # construct actual plugin
                 if plugin.construct_plugin():
                     plugin.state = PluginState.OFF
@@ -83,27 +99,16 @@ class Visualiser:
                 for _plugin in (
                     p for p in self.plugins if isinstance(p, ToggleableMixin)
                 ):
-
-                    if self.current_modal.state is None:
-                        # selecting modal
-                        for registered_modal in _plugin.keys:
-
-                            if isinstance(registered_modal, tuple):
-                                continue
-                            registered_modal: ModalControl
-
-                            if registered_modal.key.match(ev.key.name):
-                                self.current_modal.state = registered_modal
-                                return True
-                    else:
-                        # operating within modal
-                        if ModalState.quit_key.match(ev.key.name):
-                            self.current_modal.state = None
+                    if (
+                        not self.current_modal.at_root
+                        and self.current_modal.quit_key.match(ev.key.name)
+                    ):
+                        self.current_modal.quit_modal()
+                        return True
+                    for mappings in self.current_modal.state.mappings:
+                        if mappings.key.match(ev.key.name):
+                            mappings.callback()
                             return True
-                        for mappings in self.current_modal.state.mappings:
-                            if mappings.key.match(ev.key.name.upper()):
-                                mappings.callback()
-                                return True
 
             result = process()
             for _hook in self.hooks.on_keypress_finish:

@@ -82,22 +82,16 @@ class VisualisableImage(WidgetsMixin, ToggleableMixin, VisualisablePlugin):
         super().__init__()
         self.botz = botz
         self.keys = [
-            ModalControl(
-                "i",
-                [
-                    (
-                        "a",
-                        lambda: f"toggle auto-update [{boolean_to_onoff(self.auto_update)}]",
-                        self.__toggle_auto_update,
-                    ),
-                    (
-                        "r",
-                        lambda: f"toggle auto-resize [{boolean_to_onoff(self.auto_resize)}]",
-                        self.__toggle_auto_resize,
-                    ),
-                ],
-                modal_name="sound speed",
-            )
+            (
+                "a",
+                lambda: f"toggle auto-update [{boolean_to_onoff(self.auto_update)}]",
+                self.__toggle_auto_update,
+            ),
+            (
+                "r",
+                lambda: f"toggle auto-resize [{boolean_to_onoff(self.auto_resize)}]",
+                self.__toggle_auto_resize,
+            ),
         ]
         self.auto_update = True
         self.auto_resize = True

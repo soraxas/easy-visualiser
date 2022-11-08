@@ -2,16 +2,17 @@ import enum
 import os
 from abc import ABC, abstractmethod
 import argparse
-from typing import Optional, Callable, List, Dict, Type, Tuple
+from typing import Optional, Callable, List, Dict, Type, Tuple, TYPE_CHECKING, Union
 import sys
 from vispy.scene import Widget
-
-from .modal_control import ModalControl
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict, Literal, overload  # pylint: disable=no-name-in-module
 else:
     from typing_extensions import TypedDict, Literal, overload
+
+if TYPE_CHECKING:
+    from .modal_control import ModalControl, Mapping
 
 
 class PluginState(enum.Enum):
@@ -21,7 +22,7 @@ class PluginState(enum.Enum):
 
 
 class ToggleableMixin:
-    keys: List[ModalControl]
+    keys: List[Union["ModalControl", "Mapping.MappingRawType"]]
     state: PluginState
     construct_plugin: Callable
 
