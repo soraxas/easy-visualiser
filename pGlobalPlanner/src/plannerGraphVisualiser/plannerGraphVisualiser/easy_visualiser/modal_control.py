@@ -1,52 +1,14 @@
-import enum
 from abc import ABC, abstractmethod
 from itertools import chain
-from typing import Callable, Tuple, List, Union, TYPE_CHECKING, Iterable
+from typing import Callable, List, Union, TYPE_CHECKING
 
+from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping, Key
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    ToggleableMixin,
+    TriggerableMixin,
 )
 
 if TYPE_CHECKING:
     from plannerGraphVisualiser.easy_visualiser.visualiser import Visualiser
-
-
-class Key:
-    KeyType = Union[Union[str, List[str]], "Key"]
-
-    def __init__(self, keys: KeyType):
-        if isinstance(keys, Key):
-            self._keys = list(keys._keys)
-            return
-
-        if isinstance(keys, str):
-            keys = [keys]
-        self._keys = [k.upper() for k in keys]
-
-    def match(self, key: Union["Key", str]):
-        if isinstance(key, Key):
-            return any(key.match(_k) for _k in self._keys)
-        return key.upper() in self._keys
-
-    def __repr__(self):
-        return ",".join(self._keys)
-
-
-class Mapping:
-    MappingRawType = Tuple[Key.KeyType, str, Callable]
-
-    def __init__(
-        self, key: Key.KeyType, description: Union[str, Callable], callback: Callable
-    ):
-        self.key = Key(key)
-        self._description = description
-        self.callback = callback
-
-    @property
-    def description(self):
-        if isinstance(self._description, Callable):
-            return self._description()
-        return self._description
 
 
 class AbstractModalControl(ABC):
@@ -62,51 +24,70 @@ class AbstractModalControl(ABC):
     def to_help_msg(self) -> str:
         pass
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}<{self.key}:{self.mappings}>"
+
+
+def mapping_to_one_line_string(mapping: Mapping) -> str:
+    return (
+        f"Press [{mapping.key}] to {mapping.description}"
+        if not mapping.key.is_empty
+        else mapping.description
+    )
+
 
 class ModalControl(AbstractModalControl):
     def __init__(
         self,
         key: Union[Key.KeyType],
-        mappings: List[Union[Mapping, Mapping.MappingRawType]],
+        mappings: List[Union[Mapping, Mapping.MappingRawType, "ModalControl"]],
         modal_name: str = None,
     ):
         self.key = Key(key)
-        self.mappings: List[Mapping] = [
-            Mapping(m[0], m[1], m[2]) if isinstance(m, tuple) else m for m in mappings
-        ]
-        if any(ModalState.quit_key.match(data[0]) for data in mappings):
+        self.mappings: List[Mapping] = []
+        for data in mappings:
+            if isinstance(data, tuple):
+                mapping = Mapping(data[0], data[1], data[2])
+            elif isinstance(data, Mapping):
+                mapping = data
+            elif isinstance(data, ModalControl):
+                mapping = Mapping(
+                    key=data.key,
+                    description=f"Press {data.key} to control {data.modal_name}",
+                    callback=ModalState.get_instance().create_set_state_callback(data),
+                )
+            else:
+                raise ValueError(f"Unknown data type {type(data)} for {data}")
+            self.mappings.append(mapping)
+        if any(ModalState.quit_key.match(data.key) for data in mappings):
             raise ValueError("[q] cannot be mapped!")
         self._modal_name = modal_name
 
     def to_help_msg(self) -> str:
-        msg = f">>>>>  {self.modal_name}\n\n"
+        msg = (
+            f">>>>>  {' > '.join(s.modal_name for s in ModalState.states_stack())}\n\n"
+        )
         msg += "\n".join(
-            f"Press [{mapping.key}] to {mapping.description}"
-            for mapping in self.mappings
+            mapping_to_one_line_string(mapping) for mapping in self.mappings
         )
         msg += f"\n\n\n\nPress [{ModalState.quit_key}] to exit current modal"
         return msg
 
-    def __repr__(self):
-        return f"{ModalControl.__name__}<{self.key}:{self.mappings}>"
-
 
 class RootModalControl(AbstractModalControl):
     def __init__(self, visualiser: "Visualiser", modal_state):
+        self.key = Key("")
         self.visualiser = visualiser
-        self.modal_state = modal_state
+        self.modal_state: ModalState = modal_state
         self.extra_registered_mappings: List[Mapping] = []
 
     @property
     def mappings(self) -> List[Mapping]:
-        def enter_modal_cb(modal: ModalControl):
-            self.modal_state.state = modal
-
         return list(
             chain(
                 # root mappings
                 (
-                    Mapping(m.key, f"Press [{m.key}] to {m.description}", m.callback)
+                    Mapping(m.key, mapping_to_one_line_string(m), m.callback)
                     for m in self.extra_registered_mappings
                 ),
                 # empty line to separate
@@ -117,14 +98,16 @@ class RootModalControl(AbstractModalControl):
                         mapping.key,
                         description=f"Press [{mapping.key}] to "
                         f"control Modal <{mapping.modal_name}>",
-                        callback=lambda: enter_modal_cb(mapping),
+                        callback=ModalState.get_instance().create_set_state_callback(
+                            mapping
+                        ),
                     )
                     # gather all mappings in each plugin
                     for mapping in chain(
                         *(
                             p.keys
                             for p in self.visualiser.plugins
-                            if isinstance(p, ToggleableMixin)
+                            if isinstance(p, TriggerableMixin)
                         )
                     )
                 ),
@@ -142,8 +125,29 @@ class ModalState:
     _states_stack: List[ModalControl] = []
     quit_key: Key = Key("q")
 
+    __global_instance: "ModalState" = None
+
+    @classmethod
+    def get_instance(cls) -> "ModalState":
+        if cls.__global_instance is None:
+            raise RuntimeError()
+        return cls.__global_instance
+
+    @classmethod
+    def states_stack(cls) -> List[ModalControl]:
+        return list(cls.get_instance()._states_stack)
+
     def __init__(self, visualiser: "Visualiser"):
         self.root_state = RootModalControl(visualiser, modal_state=self)
+        self.__class__.__global_instance = self
+
+    def create_set_state_callback(self, value_to_be_set: ModalControl) -> Callable:
+        """Return a callback that would modify the state of this instance"""
+
+        def cb():
+            self.state = value_to_be_set
+
+        return cb
 
     @property
     def state(self) -> AbstractModalControl:
@@ -153,6 +157,7 @@ class ModalState:
 
     @state.setter
     def state(self, value: ModalControl):
+        assert isinstance(value, ModalControl)
         if value in self._states_stack:
             raise ValueError(
                 f"The given modal control {value} already exist in the current stack!"

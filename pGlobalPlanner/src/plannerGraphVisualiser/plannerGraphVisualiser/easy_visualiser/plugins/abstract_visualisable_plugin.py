@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from types import SimpleNamespace
-from typing import Dict, Type, TYPE_CHECKING
+from typing import Type, TYPE_CHECKING
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     PluginState,
     IntervalUpdatableMixin,
@@ -13,15 +13,13 @@ if TYPE_CHECKING:
 
 class VisualisablePlugin(ABC):
     visualiser: "Visualiser"
+    name: str
     __had_set_range: bool = False
 
     def __init__(self, name: str = None):
         self.state = PluginState.EMPTY
 
-        try:
-            getattr(self, "name")
-        except AttributeError:
-            pass
+        if not hasattr(self, "name"):
             if name is None:
                 name = self.__class__.__name__
             self.name = name

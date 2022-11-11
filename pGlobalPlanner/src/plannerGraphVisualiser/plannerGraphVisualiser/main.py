@@ -1,7 +1,7 @@
 import os
 
 from plannerGraphVisualiser.easy_visualiser.plugins.functional_zscaler import (
-    ZScalerPlugin,
+    AxisScalerPlugin,
 )
 from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
     VisualisableStatusBar,
@@ -86,7 +86,7 @@ def run():
     visualiser = Visualiser(
         title="pGlobalPlanner Plan Visualiser",
     )
-    visualiser.register_plugin(ZScalerPlugin(args.z_scale_factor))
+    visualiser.register_plugin(AxisScalerPlugin(args.z_scale_factor, name="zscaler"))
     visualiser.register_plugin(VisualisableStatusBar())
     visualiser.register_plugin(
         VisualisableBathy(

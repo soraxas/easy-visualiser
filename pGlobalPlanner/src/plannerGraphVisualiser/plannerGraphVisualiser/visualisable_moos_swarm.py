@@ -15,9 +15,14 @@ from vispy import app
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
 )
-from .easy_visualiser.plugin_capability import ToggleableMixin, GuardableMixin
+from .easy_visualiser.plugin_capability import (
+    ToggleableMixin,
+    GuardableMixin,
+    TriggerableMixin,
+)
 
-from .easy_visualiser.modal_control import ModalControl, Key
+from .easy_visualiser.modal_control import ModalControl
+from .easy_visualiser.key_mapping import Key
 from plannerGraphVisualiser.moos_comms import pMoosPlannerVisualiser
 
 PITCH_ANGLE_CHANNEL_NAME = "VEHICLE_ANGLE"
@@ -67,7 +72,7 @@ class Vehicle:
 
 class VisualisableMoosSwarm(
     GuardableMixin,
-    ToggleableMixin,
+    TriggerableMixin,
     # UpdatableMixin,
     VisualisablePlugin,
 ):

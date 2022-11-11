@@ -1,8 +1,10 @@
 from collections import defaultdict
 from copy import copy
+from typing import overload
 
+import numpy as np
 from vispy.plot import PlotWidget
-from vispy.scene import PanZoomCamera
+from vispy.scene import PanZoomCamera, visuals
 
 
 class SyncedPanZoomCamera(PanZoomCamera):
@@ -25,16 +27,12 @@ class SyncedPanZoomCamera(PanZoomCamera):
         container.append(self)
         super().__init__(*args, **kwargs)
 
-        # self.view.scene.transform.changed.connect(lambda ev: rienst)
-
     def view_changed(self):
         super().view_changed()
         if self._viewbox is None:
             return
 
-        # ic(self.__class__.__sync_registry[self.__sync_id])
         for instance in self.__class__.__sync_registry[self.__sync_id]:
-            # ic(self.rect, instance.rect)
             if instance is self:
                 continue
 
@@ -76,3 +74,73 @@ class LockedPanZoomCamera(PanZoomCamera):
 
     def viewbox_mouse_event(self, event):
         return
+
+
+class MarkerWithModifiablePos(visuals.Markers):
+    """
+    This visual marker can speed-up / avoid overhead from set_data via only
+    updating the necessary components.
+    """
+
+    _had_set_data = False
+
+    @overload
+    def __init__(
+        self,
+        symbol="o",
+        scaling=False,
+        alpha=1,
+        antialias=1,
+        spherical=False,
+        light_color="white",
+        light_position=(1, -1, 1),
+        light_ambient=0.3,
+        **kwargs,
+    ):
+        ...
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @overload
+    def set_data(
+        self,
+        pos=None,
+        size=10.0,
+        edge_width=1.0,
+        edge_width_rel=None,
+        edge_color="black",
+        face_color="white",
+        symbol=None,
+        scaling=None,
+    ):
+        ...
+
+    def set_data(self, *args, **kwargs):
+        super().set_data(*args, **kwargs)
+        self._had_set_data = True
+
+    @property
+    def had_set_data(self) -> bool:
+        return self._had_set_data
+
+    def update_data_pos(self, pos_data: np.ndarray):
+        self.__update_guard()
+        self._data["a_position"][:, : pos_data.shape[1]] = pos_data
+        self.__update()
+
+    def update_data_size(self, size: float):
+        self.__update_guard()
+        self._data["a_size"] = size
+        self.__update()
+
+    def __update_guard(self):
+        """Must have an initial set_data before first usage"""
+        if not self.had_set_data:
+            raise RuntimeError("marker data had not been set yet!")
+
+    def __update(self):
+        """Trigger update on opengl"""
+        self._vbo.set_data(self._data)
+        # self.shared_program.bind(self.points._vbo)
+        self.update()

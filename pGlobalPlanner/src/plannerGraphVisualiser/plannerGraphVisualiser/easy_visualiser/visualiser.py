@@ -5,12 +5,15 @@ from vispy import scene, app
 
 from typing import List, Tuple, Dict, Callable, Optional
 
+from vispy.scene import Widget, Grid
+
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
 )
-from .plugin_capability import ToggleableMixin, WidgetsMixin, PluginState, WidgetOption
-from .modal_control import ModalControl, ModalState, Mapping
+from .plugin_capability import TriggerableMixin, WidgetsMixin, PluginState
+from .modal_control import ModalControl, ModalState
+from .key_mapping import Mapping
 
 
 @dataclasses.dataclass
@@ -26,6 +29,7 @@ class Visualiser:
     def __init__(
         self,
         title="untitled",
+        grid_margin: float = 0,
     ):
         # Display the data
         self.canvas = scene.SceneCanvas(title=title, keys="interactive", show=True)
@@ -36,7 +40,7 @@ class Visualiser:
         self.current_modal = ModalState(visualiser=self)
         self.hooks = VisualiserHooks([], [])
         # build grid
-        self.grid = self.canvas.central_widget.add_grid(margin=10)
+        self.grid: Grid = self.canvas.central_widget.add_grid(margin=grid_margin)
         # # col num just to make it on the right size (0 is left)
         # self.grid.add_widget(col=10)
 
@@ -62,11 +66,23 @@ class Visualiser:
                 ###########################################################
                 # build widget
                 if isinstance(plugin, WidgetsMixin):
-                    for widget, data in plugin.get_constructed_widgets():
+                    widget_datapack = plugin.get_constructed_widgets()
+                    if not isinstance(widget_datapack, list):
+                        widget_datapack = [widget_datapack]
+                    for widget_datapack in widget_datapack:
+                        if isinstance(widget_datapack, tuple):
+                            widget, data = widget_datapack
+                        elif isinstance(widget_datapack, Widget):
+                            widget = widget_datapack
+                            data = dict()
+                        else:
+                            raise ValueError(
+                                f"Unknown widget data type {widget_datapack}"
+                            )
                         self.grid.add_widget(widget, **data)
                 ###########################################################
                 # extract root mappings
-                if isinstance(plugin, ToggleableMixin):
+                if isinstance(plugin, TriggerableMixin):
                     _new_keys: List[ModalControl] = []
                     for key in plugin.keys:
                         if isinstance(key, ModalControl):
@@ -97,7 +113,7 @@ class Visualiser:
             def process():
                 # print(ev.key.name)
                 for _plugin in (
-                    p for p in self.plugins if isinstance(p, ToggleableMixin)
+                    p for p in self.plugins if isinstance(p, TriggerableMixin)
                 ):
                     if (
                         not self.current_modal.at_root

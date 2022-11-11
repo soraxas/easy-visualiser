@@ -9,7 +9,7 @@ from icecream import ic
 
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     WidgetsMixin,
-    ToggleableMixin,
+    TriggerableMixin,
     WidgetOption,
 )
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
@@ -77,7 +77,7 @@ def _filter_out(x, y):
     return x[_needed], y[_needed]
 
 
-class VisualisableImage(WidgetsMixin, ToggleableMixin, VisualisablePlugin):
+class VisualisableImage(WidgetsMixin, TriggerableMixin, VisualisablePlugin):
     def __init__(self, botz: np.array):
         super().__init__()
         self.botz = botz
@@ -206,7 +206,7 @@ class VisualisableImage(WidgetsMixin, ToggleableMixin, VisualisablePlugin):
                 texture_format=texture_format,
             )
         )
-        return [(grid, dict(col=0, row=0, col_span=2))]
+        return grid, dict(col=0, row=0, col_span=2)
 
 
 class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
@@ -215,7 +215,7 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
     def __init__(
         self,
         bounds,
-        position: Dict = None,
+        widget_option: WidgetOption = None,
         name="plot",
         custom_camera=None,
         lineplot_kwargs=None,
@@ -226,9 +226,9 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
         self.lineplot_kwargs = lineplot_kwargs
 
         self.bounds = bounds
-        if position is None:
-            position = dict()
-        self.position = position
+        if widget_option is None:
+            widget_option = WidgetOption()
+        self.widget_option = widget_option
         self.plots: List[scene.LinePlot] = []
         self.custom_camera = custom_camera
 
@@ -256,7 +256,7 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
             )
             #################################
             # self.enforce_bounds()
-        return [(self.pw, self.position)]
+        return [(self.pw, self.widget_option)]
 
 
 class VisualisableVolumePlot(WidgetsMixin, VisualisablePlugin):
@@ -350,7 +350,7 @@ if __name__ == "__main__":
                 x=[np.nanmin(sound_speed), np.nanmax(sound_speed)],
                 y=zc_bounds,
             ),
-            position=dict(col=2, row=0, row_span=2, col_span=2),
+            widget_option=WidgetOption(col=2, row=0, row_span=2, col_span=2),
             name="plot_raw",
             custom_camera=SyncedPanZoomCamera(
                 "depthplot", sync_xaxis=False, sync_yaxis=True
@@ -363,7 +363,7 @@ if __name__ == "__main__":
                 x=[np.nanmin(sound_speed), np.nanmax(sound_speed)],
                 y=zc_bounds,
             ),
-            position=dict(col=4, row=0, row_span=2, col_span=2),
+            widget_option=WidgetOption(col=4, row=0, row_span=2, col_span=2),
             name="plot_spline_p",
             custom_camera=SyncedPanZoomCamera(
                 "depthplot", sync_xaxis=False, sync_yaxis=True
@@ -376,7 +376,7 @@ if __name__ == "__main__":
                 x=[np.nanmin(sound_speed), np.nanmax(sound_speed)],
                 y=zc_bounds,
             ),
-            position=dict(col=5, row=0, row_span=2, col_span=2),
+            widget_option=WidgetOption(col=5, row=0, row_span=2, col_span=2),
             name="plot_spline_p_p",
             custom_camera=SyncedPanZoomCamera(
                 "depthplot", sync_xaxis=False, sync_yaxis=True

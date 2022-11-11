@@ -1,7 +1,4 @@
-from itertools import chain
-from tkinter import Widget
-
-from typing import List, Tuple, Optional
+from typing import Optional
 from vispy import scene
 
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
@@ -9,7 +6,6 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
 )
 
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    ToggleableMixin,
     WidgetsMixin,
     WidgetOption,
 )
@@ -36,7 +32,8 @@ class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):
     def update_status(self):
         self.status_bar.text = self.visualiser.current_modal.state.to_help_msg()
 
-    def get_constructed_widgets(self) -> List[Tuple[Widget, WidgetOption]]:
+    def get_constructed_widgets(self):
+        # noinspection PyTypeChecker
         self.status_bar = scene.Label(
             "",
             color="white",
@@ -44,9 +41,7 @@ class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):
             anchor_y="bottom",
             pos=[0, 0],
         )
-        return [
-            (
-                self.status_bar,
-                self.widget_option,
-            )
-        ]
+        return (
+            self.status_bar,
+            self.widget_option,
+        )

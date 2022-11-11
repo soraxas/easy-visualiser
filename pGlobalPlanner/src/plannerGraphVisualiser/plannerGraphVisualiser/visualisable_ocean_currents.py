@@ -19,7 +19,8 @@ from plannerGraphVisualiser.easy_visualiser.dummy import (
     DUMMY_LINE,
     DUMMY_ARROW,
 )
-from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl, Key
+from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
+from .easy_visualiser.key_mapping import Key
 from .easy_visualiser.utils import ToggleableBool
 
 

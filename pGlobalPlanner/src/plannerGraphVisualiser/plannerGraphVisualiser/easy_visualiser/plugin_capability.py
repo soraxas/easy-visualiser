@@ -12,7 +12,8 @@ else:
     from typing_extensions import TypedDict, Literal, overload
 
 if TYPE_CHECKING:
-    from .modal_control import ModalControl, Mapping
+    from .modal_control import ModalControl
+    from .key_mapping import Mapping
 
 
 class PluginState(enum.Enum):
@@ -21,8 +22,11 @@ class PluginState(enum.Enum):
     OFF = 2
 
 
-class ToggleableMixin:
+class TriggerableMixin:
     keys: List[Union["ModalControl", "Mapping.MappingRawType"]]
+
+
+class ToggleableMixin(TriggerableMixin):
     state: PluginState
     construct_plugin: Callable
 
@@ -92,7 +96,10 @@ class WidgetOption(TypedDict, total=False):
     col_span: int
 
 
+OneWidgetData = Union[Widget, Tuple[Widget, WidgetOption]]
+
+
 class WidgetsMixin:
     @abstractmethod
-    def get_constructed_widgets(self) -> List[Tuple[Widget, WidgetOption]]:
+    def get_constructed_widgets(self) -> Union[OneWidgetData, List[OneWidgetData]]:
         pass
