@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import dataclasses
 from vispy import scene, app
 
-from typing import List, Tuple, Dict, Callable, Optional
+from typing import List, Tuple, Dict, Callable, Optional, Union, Iterable
 
 from vispy.scene import Widget, Grid
 
@@ -11,7 +11,12 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
 )
-from .plugin_capability import TriggerableMixin, WidgetsMixin, PluginState
+from .plugin_capability import (
+    TriggerableMixin,
+    WidgetsMixin,
+    PluginState,
+    ToggleableMixin,
+)
 from .modal_control import ModalControl, ModalState
 from .key_mapping import Mapping
 
@@ -82,24 +87,11 @@ class Visualiser:
                         self.grid.add_widget(widget, **data)
                 ###########################################################
                 # extract root mappings
-                if isinstance(plugin, TriggerableMixin):
-                    _new_keys: List[ModalControl] = []
-                    for key in plugin.keys:
-                        if isinstance(key, ModalControl):
-                            _new_keys.append(key)
-                        else:
-                            # mapping type
-                            self.current_modal.add_root_mapping(
-                                Mapping(key[0], key[1], key[2])
-                                if isinstance(key, tuple)
-                                else key
-                            )
-                    plugin.keys = _new_keys
 
                 ###########################################################
                 # construct actual plugin
-                if plugin.construct_plugin():
-                    plugin.state = PluginState.OFF
+                plugin.construct_plugin()
+                # plugin.state = PluginState.OFF
                 ###########################################################
 
             except VisualisablePluginInitialisationError as e:
@@ -115,6 +107,10 @@ class Visualiser:
                 for _plugin in (
                     p for p in self.plugins if isinstance(p, TriggerableMixin)
                 ):
+                    if isinstance(_plugin, ToggleableMixin) and not bool(_plugin.state):
+                        # is off. skip key matching
+                        continue
+
                     if (
                         not self.current_modal.at_root
                         and self.current_modal.quit_key.match(ev.key.name)
@@ -139,6 +135,12 @@ class Visualiser:
             if plugin.state is PluginState.ON:
                 plugin.update()
         self.initialised = True
+
+    @property
+    def triggerable_plugins(
+        self,
+    ) -> Iterable[Union[VisualisablePlugin, TriggerableMixin]]:
+        yield from (p for p in self.plugins if isinstance(p, TriggerableMixin))
 
     @property
     def registered_plugins_mappings(self) -> SimpleNamespace:

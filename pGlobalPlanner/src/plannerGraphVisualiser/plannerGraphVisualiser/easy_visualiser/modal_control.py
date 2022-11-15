@@ -3,9 +3,6 @@ from itertools import chain
 from typing import Callable, List, Union, TYPE_CHECKING
 
 from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping, Key
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    TriggerableMixin,
-)
 
 if TYPE_CHECKING:
     from plannerGraphVisualiser.easy_visualiser.visualiser import Visualiser
@@ -79,7 +76,6 @@ class RootModalControl(AbstractModalControl):
         self.key = Key("")
         self.visualiser = visualiser
         self.modal_state: ModalState = modal_state
-        self.extra_registered_mappings: List[Mapping] = []
 
     @property
     def mappings(self) -> List[Mapping]:
@@ -88,7 +84,12 @@ class RootModalControl(AbstractModalControl):
                 # root mappings
                 (
                     Mapping(m.key, mapping_to_one_line_string(m), m.callback)
-                    for m in self.extra_registered_mappings
+                    for m in chain(
+                        *(
+                            p.get_root_mappings()
+                            for p in self.visualiser.triggerable_plugins
+                        )
+                    )
                 ),
                 # empty line to separate
                 [Mapping("", "", lambda: None)],
@@ -105,9 +106,8 @@ class RootModalControl(AbstractModalControl):
                     # gather all mappings in each plugin
                     for mapping in chain(
                         *(
-                            p.keys
-                            for p in self.visualiser.plugins
-                            if isinstance(p, TriggerableMixin)
+                            p.get_modal_control()
+                            for p in self.visualiser.triggerable_plugins
                         )
                     )
                 ),
@@ -163,9 +163,6 @@ class ModalState:
                 f"The given modal control {value} already exist in the current stack!"
             )
         self._states_stack.append(value)
-
-    def add_root_mapping(self, mapping: Mapping):
-        self.root_state.extra_registered_mappings.append(mapping)
 
     @property
     def at_root(self) -> bool:

@@ -21,9 +21,22 @@ class PluginState(enum.Enum):
     ON = 1
     OFF = 2
 
+    def __bool__(self):
+        return self is PluginState.ON
+
 
 class TriggerableMixin:
     keys: List[Union["ModalControl", "Mapping.MappingRawType"]]
+
+    def get_root_mappings(self) -> List["Mapping"]:
+        from .modal_control import ModalControl
+
+        return [item for item in self.keys if not isinstance(item, ModalControl)]
+
+    def get_modal_control(self) -> List["ModalControl"]:
+        from .modal_control import ModalControl
+
+        return [item for item in self.keys if isinstance(item, ModalControl)]
 
 
 class ToggleableMixin(TriggerableMixin):
@@ -47,6 +60,16 @@ class ToggleableMixin(TriggerableMixin):
     @abstractmethod
     def turn_on_plugin(self):
         self.state = PluginState.ON
+
+    def get_root_mappings(self) -> List["Mapping"]:
+        if bool(self.state):
+            return super().get_root_mappings()
+        return []
+
+    def get_modal_control(self) -> List["ModalControl"]:
+        if bool(self.state):
+            return super().get_modal_control()
+        return []
 
 
 class GuardableMixin:

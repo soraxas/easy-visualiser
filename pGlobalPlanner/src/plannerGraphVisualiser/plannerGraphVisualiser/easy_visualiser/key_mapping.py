@@ -11,7 +11,9 @@ class Key:
         self.is_empty = False
         self.custom_repr = custom_repr
         if isinstance(keys, Key):
+            # copy construct
             self._keys = list(keys._keys)
+            self.custom_repr = keys.custom_repr
             return
 
         if isinstance(keys, str):
@@ -31,8 +33,8 @@ class Key:
 
 
 ######################################
-Key.Plus = Key(["+", "="])
-Key.Minus = Key(["-", "_"])
+Key.Plus = Key(["+", "="], custom_repr="+")
+Key.Minus = Key(["-", "_"], custom_repr="-")
 ######################################
 
 
