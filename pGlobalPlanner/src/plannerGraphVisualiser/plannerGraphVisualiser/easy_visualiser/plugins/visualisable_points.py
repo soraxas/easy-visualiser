@@ -89,6 +89,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
         self,
         **kwargs,
     ) -> bool:
+        super().construct_plugin()
         self.points_visual = MarkerWithModifiablePos(
             parent=self.visualiser.view.scene,
             antialias=float(self._antialias),

@@ -56,7 +56,7 @@ class ModalControl(AbstractModalControl):
             else:
                 raise ValueError(f"Unknown data type {type(data)} for {data}")
             self.mappings.append(mapping)
-        if any(ModalState.quit_key.match(data.key) for data in mappings):
+        if any(ModalState.quit_key.match(data.key) for data in self.mappings):
             raise ValueError("[q] cannot be mapped!")
         self._modal_name = modal_name
 

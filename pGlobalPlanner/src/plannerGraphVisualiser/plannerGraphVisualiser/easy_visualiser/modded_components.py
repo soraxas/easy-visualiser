@@ -129,6 +129,11 @@ class MarkerWithModifiablePos(visuals.Markers):
         self._data["a_position"][:, : pos_data.shape[1]] = pos_data
         self.__update()
 
+    def update_data_color(self, color_data: np.ndarray):
+        self.__update_guard()
+        self._data["a_bg_color"][:] = color_data
+        self.__update()
+
     def update_data_size(self, size: float):
         self.__update_guard()
         self._data["a_size"] = size
