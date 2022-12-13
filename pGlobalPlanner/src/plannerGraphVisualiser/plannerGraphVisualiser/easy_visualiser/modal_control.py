@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import chain
-from typing import Callable, List, Union, TYPE_CHECKING
+from typing import Callable, List, Union, Optional, TYPE_CHECKING
 
 from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping, Key
 
@@ -10,8 +10,11 @@ if TYPE_CHECKING:
 
 class AbstractModalControl(ABC):
     key: Key
-    _modal_name: str = None
-    mappings: List[Mapping]
+    _modal_name: Optional[str] = None
+
+    @property
+    def mappings(self) -> List[Mapping]:
+        raise NotImplementedError()
 
     @property
     def modal_name(self):
@@ -38,10 +41,10 @@ class ModalControl(AbstractModalControl):
         self,
         key: Union[Key.KeyType],
         mappings: List[Union[Mapping, Mapping.MappingRawType, "ModalControl"]],
-        modal_name: str = None,
+        modal_name: Optional[str] = None,
     ):
         self.key = Key(key)
-        self.mappings: List[Mapping] = []
+        self._mappings: List[Mapping] = []
         for data in mappings:
             if isinstance(data, tuple):
                 mapping = Mapping(data[0], data[1], data[2])
@@ -55,10 +58,14 @@ class ModalControl(AbstractModalControl):
                 )
             else:
                 raise ValueError(f"Unknown data type {type(data)} for {data}")
-            self.mappings.append(mapping)
+            self._mappings.append(mapping)
         if any(ModalState.quit_key.match(data.key) for data in self.mappings):
             raise ValueError("[q] cannot be mapped!")
         self._modal_name = modal_name
+
+    @property
+    def mappings(self) -> List[Mapping]:
+        return self._mappings
 
     def to_help_msg(self) -> str:
         msg = (

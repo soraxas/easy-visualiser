@@ -43,15 +43,13 @@ class ToggleableMixin(TriggerableMixin):
     state: PluginState
     construct_plugin: Callable
 
-    def toggle(self) -> bool:
+    def toggle(self):
         if self.state is PluginState.EMPTY:
             self.construct_plugin()
         elif self.state is PluginState.ON:
             self.turn_off_plugin()
-            return True
         else:
             self.turn_on_plugin()
-            return False
 
     @abstractmethod
     def turn_off_plugin(self):

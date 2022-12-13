@@ -1,6 +1,6 @@
 from abc import ABC
 from types import SimpleNamespace
-from typing import Type, TYPE_CHECKING
+from typing import Type, TYPE_CHECKING, Optional
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     PluginState,
     IntervalUpdatableMixin,
@@ -16,7 +16,7 @@ class VisualisablePlugin(ABC):
     name: str
     __had_set_range: bool = False
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: Optional[str] = None):
         self.state = PluginState.EMPTY
 
         if not hasattr(self, "name"):
@@ -37,13 +37,11 @@ class VisualisablePlugin(ABC):
 
     def update(self, force=False) -> None:
         """no overriding!"""
-        if not force:
-            if not isinstance(self, IntervalUpdatableMixin):
+        if not isinstance(self, IntervalUpdatableMixin):
+            return
+        if not force and isinstance(self, GuardableMixin):
+            if not self.on_update_guard():
                 return
-
-            if isinstance(self, GuardableMixin):
-                if not self.on_update_guard():
-                    return
 
         self.on_update()
 

@@ -7,7 +7,7 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
 
 axis_pos_template = np.array(
     [[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]],
-    dtype=np.float,
+    dtype=np.float16,
 )
 
 
@@ -18,7 +18,7 @@ class VisualisablePrincipleAxis(VisualisablePlugin):
     def __init__(
         self,
         axis_length: float = 1,
-        origin: np.array = np.array([0, 0, 0], dtype=np.float),
+        origin: np.ndarray = np.array([0, 0, 0], dtype=np.float16),
     ):
         super().__init__()
         self.axis_length = axis_length
