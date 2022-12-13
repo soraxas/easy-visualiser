@@ -1,5 +1,4 @@
 from abc import ABC
-from types import SimpleNamespace
 from typing import Type, TYPE_CHECKING, Optional
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
     PluginState,
@@ -8,7 +7,10 @@ from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
 )
 
 if TYPE_CHECKING:
-    from plannerGraphVisualiser.easy_visualiser.visualiser import Visualiser
+    from plannerGraphVisualiser.easy_visualiser.visualiser import (
+        Visualiser,
+        VisualisablePluginNameSpace,
+    )
 
 
 class VisualisablePlugin(ABC):
@@ -32,7 +34,7 @@ class VisualisablePlugin(ABC):
         self.visualiser = visualiser
 
     @property
-    def other_plugins(self) -> SimpleNamespace:
+    def other_plugins(self) -> "VisualisablePluginNameSpace":
         return self.visualiser.registered_plugins_mappings
 
     def update(self, force=False) -> None:
@@ -56,6 +58,9 @@ class VisualisablePlugin(ABC):
     @property
     def had_set_range(self) -> bool:
         return self.__class__.__had_set_range
+
+    def __repr__(self) -> str:
+        return f"{self.name}<...>"
 
 
 class VisualisablePluginInitialisationError(Exception):

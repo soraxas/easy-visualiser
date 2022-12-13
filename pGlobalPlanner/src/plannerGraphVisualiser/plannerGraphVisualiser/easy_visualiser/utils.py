@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List, Tuple, Set, Iterator, TypeVar
 
 import numpy as np
 
@@ -99,3 +99,42 @@ class IncrementableInt:
 
 def map_array_to_0_1(array: np.ndarray) -> np.ndarray:
     return (array - array.min()) / (array.max() - array.min())
+
+
+U = TypeVar("U")
+
+
+def topological_sort(source: List[Tuple[U, Set[U]]]) -> Iterator[U]:
+    """perform topo sort on elements.
+
+    :arg source: list of ``(name, [list of dependancies])`` pairs
+    :returns: list of names, with dependancies listed first
+    """
+    pending = [
+        (name, set(deps)) for name, deps in source
+    ]  # copy deps so we can modify set in-place
+    emitted = []
+    while pending:
+        next_pending = []
+        next_emitted = []
+        for entry in pending:
+            name, deps = entry
+            deps.difference_update(emitted)  # remove deps we emitted last pass
+            if deps:  # still has deps? recheck during next pass
+                next_pending.append(entry)
+            else:  # no more deps? time to emit
+                yield name
+                emitted.append(
+                    name
+                )  # <-- not required, but helps preserve original ordering
+                next_emitted.append(
+                    name
+                )  # remember what we emitted for difference_update() in next pass
+        if (
+            not next_emitted
+        ):  # all entries have unmet deps, one of two things is wrong...
+            raise ValueError(
+                "cyclic or missing dependency detected: %r" % (next_pending,)
+            )
+        pending = next_pending
+        emitted = next_emitted

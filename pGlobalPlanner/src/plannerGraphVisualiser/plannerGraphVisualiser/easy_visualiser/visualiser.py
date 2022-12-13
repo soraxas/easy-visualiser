@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import dataclasses
 from vispy import scene, app
 
-from typing import List, Tuple, Dict, Callable, Optional, Union, Iterable
+from typing import List, Tuple, Dict, Callable, Optional, Union, Iterable, Set
 
 from vispy.scene import Widget, Grid
 
@@ -19,6 +19,7 @@ from .plugin_capability import (
 )
 from .modal_control import ModalControl, ModalState
 from .key_mapping import Mapping
+from .utils import topological_sort
 
 
 @dataclasses.dataclass
@@ -27,8 +28,28 @@ class VisualiserHooks:
     on_keypress_finish: List[Callable]
 
 
+class VisualisablePluginNameSpace(SimpleNamespace):
+    def __getattr__(self, item: str) -> VisualisablePlugin:
+        try:
+            return self.__dict__[item]
+        except KeyError:
+            raise AttributeError(
+                f"Plugin '{item}' has not been registered.\n"
+                f"Valid options are: {[key for key in self.__dict__]}"
+            )
+
+    def __getitem__(self, item: str) -> VisualisablePlugin:
+        return getattr(self, item)
+
+    def __contains__(self, item: VisualisablePlugin) -> bool:
+        return item in self.__dict__
+
+
 class Visualiser:
     polling_registry: List[VisualisablePlugin] = []
+    # raw registered plugin list
+    _registered_plugins: List[Tuple[VisualisablePlugin, Set[str]]] = []
+    # sorted version
     plugins: List[VisualisablePlugin] = []
 
     def __init__(
@@ -49,10 +70,34 @@ class Visualiser:
         # # col num just to make it on the right size (0 is left)
         # self.grid.add_widget(col=10)
 
-        self._registered_plugins_mappings: Optional[SimpleNamespace] = None
+        self._registered_plugins_mappings: Optional[VisualisablePluginNameSpace] = None
         self.initialised = False
 
     def initialise(self):
+
+        self._registered_plugins_mappings = VisualisablePluginNameSpace(
+            **{p.name: p for p, _ in self._registered_plugins}
+        )
+        ###########################################################
+        # check plugin dependencies
+        for plugin, deps in self._registered_plugins:
+            for dep in deps:
+                if dep not in self.registered_plugins_mappings:
+                    raise ValueError(
+                        f"The dependency '{dep}' for plugin '{plugin.name}' "
+                        f"has not been registered!"
+                    )
+        # sort plugins based on dependencies
+        _plugins_dependency_list = [
+            (
+                plugin_data[0],
+                set(self.registered_plugins_mappings[dep] for dep in plugin_data[1]),
+            )
+            for plugin_data in self._registered_plugins
+        ]
+
+        self.plugins = list(topological_sort(_plugins_dependency_list))
+
         ###########################################################
         # on initialisation hooks
         for plugin in self.plugins:
@@ -60,9 +105,6 @@ class Visualiser:
                 plugin.on_initialisation(visualiser=self)
             except VisualisablePluginInitialisationError as e:
                 print(f"{plugin}: on initialisation.\n{e}")
-        self._registered_plugins_mappings = SimpleNamespace(
-            **{p.name: p for p in self.plugins}
-        )
 
         ###########################################################
         # build plugin
@@ -127,8 +169,13 @@ class Visualiser:
                 _hook()
             return result
 
-    def register_plugin(self, plugin: VisualisablePlugin):
-        self.plugins.append(plugin)
+    def register_plugin(
+        self, plugin: VisualisablePlugin, depends_on: Iterable[str] = None
+    ):
+        if depends_on is None:
+            depends_on = []
+        depends_on = set(depends_on)
+        self._registered_plugins.append((plugin, depends_on))
 
     def interval_update(self):
         for plugin in self.plugins:
@@ -143,7 +190,7 @@ class Visualiser:
         yield from (p for p in self.plugins if isinstance(p, TriggerableMixin))
 
     @property
-    def registered_plugins_mappings(self) -> SimpleNamespace:
+    def registered_plugins_mappings(self) -> VisualisablePluginNameSpace:
         if self._registered_plugins_mappings is None:
             raise RuntimeError("Visualiser has not been initialised yet!")
         return self._registered_plugins_mappings

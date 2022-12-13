@@ -312,7 +312,10 @@ def run():
     else:
         displacement_plugin_cls = VisualisableDisplacementMap
         visualiser.register_plugin(VisualisableMesh(args.image_path))
-        visualiser.register_plugin(AlternativeVisTrigger())
+        visualiser.register_plugin(
+            AlternativeVisTrigger(),
+            depends_on={"VisualisableMesh", "VisualisableDisplacementMap"},
+        )
 
     visualiser.register_plugin(displacement_plugin_cls(args.image_path))
     visualiser.initialise()
