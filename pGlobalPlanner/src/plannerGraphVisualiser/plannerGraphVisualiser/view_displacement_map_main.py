@@ -293,7 +293,10 @@ class AlternativeVisTrigger(TriggerableMixin, VisualisablePlugin):
         )
 
         self.other_plugins.VisualisableMesh.turn_off_plugin()
-        self.other_plugins.VisualisableDisplacementMap.turn_on_plugin()
+        try:
+            self.other_plugins.VisualisableDisplacementMap.turn_on_plugin()
+        except Exception as e:
+            print(e)
 
     def __toggle(self):
         self.other_plugins.VisualisableMesh.toggle()
