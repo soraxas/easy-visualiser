@@ -149,11 +149,14 @@ class VisualisableBathy(
         return data
 
     def turn_on_plugin(self):
-        super().turn_on_plugin()
+        if not super().turn_on_plugin():
+            return False
         self.bathy_mesh.set_data(**self.__get_data())
+        return True
 
     def turn_off_plugin(self):
-        super().turn_off_plugin()
+        if not super().turn_off_plugin():
+            return False
         if not self.bathy_colorscale_toggle:
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors = None
             self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors_indexed_by_faces = (
@@ -164,6 +167,7 @@ class VisualisableBathy(
             ys=DUMMY_AXIS_VAL,
             zs=DUMMY_AXIS_VAL,
         )
+        return True
 
     def on_update(self):
         self.turn_on_plugin()

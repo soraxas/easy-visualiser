@@ -164,13 +164,17 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
         return True
 
     def turn_on_plugin(self):
-        super().turn_on_plugin()
+        if not super().turn_on_plugin():
+            return False
         self.mesh_visual.visible = True
         self._reload_pos_data()
+        return True
 
     def turn_off_plugin(self):
-        super().turn_off_plugin()
+        if not super().turn_off_plugin():
+            return False
         self.mesh_visual.visible = False
+        return True
 
 
 class VisualisableDisplacementMap(ToggleableMixin, VisualisablePoints):
@@ -214,13 +218,17 @@ class VisualisableDisplacementMap(ToggleableMixin, VisualisablePoints):
         return self.point_data
 
     def turn_on_plugin(self):
-        super().turn_on_plugin()
+        if not super().turn_on_plugin():
+            return False
         self.points_visual.visible = True
         self._reload_pos_data(self._compute_new_point_data())
+        return True
 
     def turn_off_plugin(self):
-        super().turn_off_plugin()
+        if not super().turn_off_plugin():
+            return False
         self.points_visual.visible = False
+        return True
 
     def construct_plugin(
         self,

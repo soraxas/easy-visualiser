@@ -193,16 +193,19 @@ class VisualisableOceanCurrent(
         return data
 
     def turn_on_plugin(self):
-        super().turn_on_plugin()
+        if not super().turn_on_plugin():
+            return False
         _data = self.__get_data()
         arrow_color = _data.pop("arrow_color")
         self.currents.set_data(**_data)
         self.currents.arrow_color = arrow_color
         self.currents.visible = True
         self.animate_timer.start()
+        return True
 
     def turn_off_plugin(self):
-        super().turn_off_plugin()
+        if not super().turn_off_plugin():
+            return False
         # self.currents.set_data(
         #     pos=DUMMY_LINE,
         #     color=DUMMY_COLOUR,
@@ -211,6 +214,7 @@ class VisualisableOceanCurrent(
         # self.currents.arrow_color = DUMMY_COLOUR
         self.currents.visible = False
         self.animate_timer.stop()
+        return True
 
     def on_update(self):
         self.turn_on_plugin()

@@ -61,15 +61,15 @@ class VisualisablePlannerGraph(
     fake_sol_lines: SolutionLine
 
     def __init__(
-        self,
-        graph_data_path: str,
-        graph_toggle: ToggleableBool,
-        graph_solution_toggle: ToggleableBool,
-        graph_solution_extra_toggle: ToggleableBool,
-        use_ci: bool = True,
-        cost_min: Optional[float] = None,
-        cost_max: Optional[float] = None,
-        colormap: str = "plasma",
+            self,
+            graph_data_path: str,
+            graph_toggle: ToggleableBool,
+            graph_solution_toggle: ToggleableBool,
+            graph_solution_extra_toggle: ToggleableBool,
+            use_ci: bool = True,
+            cost_min: Optional[float] = None,
+            cost_max: Optional[float] = None,
+            colormap: str = "plasma",
     ):
         super().__init__()
         self.guarding_callable = lambda: True
@@ -207,18 +207,22 @@ class VisualisablePlannerGraph(
             self.fake_sol_lines.set_path([])
 
     def turn_on_plugin(self):
-        super().turn_on_plugin()
+        if not super().turn_on_plugin():
+            return False
         pos, edges, solution_path, costs = self.get_latest_pdata()
         if self.graph_toggle:
             self.__construct_graph(pos, edges, costs)
         self.__construct_solution(solution_path)
+        return True
 
     def turn_off_plugin(self):
-        super().turn_off_plugin()
+        if not super().turn_off_plugin():
+            return False
         self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
         self.cbar_widget.clim = (np.nan, np.nan)
 
         self.fake_sol_lines.set_path([])
+        return True
 
     def on_update(self):
         self.turn_on_plugin()
@@ -243,8 +247,8 @@ class VisualisablePlannerGraph(
         edges = pdata["edges"]
 
         if (
-            self.cost_index is not None
-            and self.cost_index >= pdata["vertices_costs"].shape[1]
+                self.cost_index is not None
+                and self.cost_index >= pdata["vertices_costs"].shape[1]
         ):
             self.cost_index = None
 
