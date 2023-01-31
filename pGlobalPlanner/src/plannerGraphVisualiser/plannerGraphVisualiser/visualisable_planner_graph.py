@@ -61,15 +61,15 @@ class VisualisablePlannerGraph(
     fake_sol_lines: SolutionLine
 
     def __init__(
-            self,
-            graph_data_path: str,
-            graph_toggle: ToggleableBool,
-            graph_solution_toggle: ToggleableBool,
-            graph_solution_extra_toggle: ToggleableBool,
-            use_ci: bool = True,
-            cost_min: Optional[float] = None,
-            cost_max: Optional[float] = None,
-            colormap: str = "plasma",
+        self,
+        graph_data_path: str,
+        graph_toggle: ToggleableBool,
+        graph_solution_toggle: ToggleableBool,
+        graph_solution_extra_toggle: ToggleableBool,
+        use_ci: bool = True,
+        cost_min: Optional[float] = None,
+        cost_max: Optional[float] = None,
+        colormap: str = "plasma",
     ):
         super().__init__()
         self.guarding_callable = lambda: True
@@ -247,8 +247,8 @@ class VisualisablePlannerGraph(
         edges = pdata["edges"]
 
         if (
-                self.cost_index is not None
-                and self.cost_index >= pdata["vertices_costs"].shape[1]
+            self.cost_index is not None
+            and self.cost_index >= pdata["vertices_costs"].shape[1]
         ):
             self.cost_index = None
 

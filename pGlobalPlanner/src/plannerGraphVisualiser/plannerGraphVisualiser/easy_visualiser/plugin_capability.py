@@ -58,8 +58,8 @@ class ToggleableMixin(TriggerableMixin):
 
     @abstractmethod
     def turn_on_plugin(self) -> bool:
-        if isinstance(self, GuardableMixin):
-            if not self.on_update_guard():
+        if isinstance(self, FileModificationGuardableMixin):
+            if not os.path.exists(self.target_file):
                 return False
         self.state = PluginState.ON
         return True
