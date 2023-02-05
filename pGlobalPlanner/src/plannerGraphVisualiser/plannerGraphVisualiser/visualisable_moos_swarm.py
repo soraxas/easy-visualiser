@@ -31,14 +31,16 @@ SWARM_VEHICLES_REPORT_CHANNEL_NAME = "NODE_REPORT_LOCAL"
 
 class SwarmModelType(enum.Enum):
     auv = 0
-    simple_sphere = 1
-    END_OF_ENUM = 2
+    submarine = 1
+    simple_sphere = 2
+    END_OF_ENUM = 3
 
 
 ASSETS_ROOT = pathlib.Path(os.path.dirname(os.path.realpath(__file__))) / "assets"
 
 SWARM_MODEL_MAPPING = {
-    SwarmModelType.auv: ASSETS_ROOT / "floating_submarine.stl",
+    SwarmModelType.auv: ASSETS_ROOT / "AUV_mesh.stl",
+    SwarmModelType.submarine: ASSETS_ROOT / "floating_submarine.stl",
     SwarmModelType.simple_sphere: ASSETS_ROOT / "300_poly_sphere.stl",
 }
 
