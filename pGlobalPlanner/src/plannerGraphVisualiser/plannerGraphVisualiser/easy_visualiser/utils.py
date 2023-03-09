@@ -67,6 +67,12 @@ class ScalableFloat:
 
 
 class IncrementableInt:
+    """
+    A class that encapsulate an int with atomic incremental and decremental
+    capability, can define their bounds,
+    (and can be reference by different objects without copy).
+    """
+
     def __init__(
         self, value: int, upper_bound: int = np.inf, lower_bound: int = -np.inf
     ):
@@ -98,6 +104,9 @@ class IncrementableInt:
 
 
 def map_array_to_0_1(array: np.ndarray) -> np.ndarray:
+    """
+    Given a 1d numpy array, return the array with values mapped to the range of 0 to 1.
+    """
     return (array - array.min()) / (array.max() - array.min())
 
 

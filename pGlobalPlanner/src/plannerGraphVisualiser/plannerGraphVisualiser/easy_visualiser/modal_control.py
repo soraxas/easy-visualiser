@@ -39,7 +39,7 @@ def mapping_to_one_line_string(mapping: Mapping) -> str:
 class ModalControl(AbstractModalControl):
     def __init__(
         self,
-        key: Union[Key.KeyType],
+        key: Key.KeyType,
         mappings: List[Union[Mapping, Mapping.MappingRawType, "ModalControl"]],
         modal_name: Optional[str] = None,
     ):

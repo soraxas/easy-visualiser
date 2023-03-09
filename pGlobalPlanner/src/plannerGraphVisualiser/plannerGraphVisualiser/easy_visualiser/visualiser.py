@@ -29,6 +29,10 @@ class VisualiserHooks:
 
 
 class VisualisablePluginNameSpace(SimpleNamespace):
+    """
+    Simple namespace to allow each plugin to refer to other plugins
+    """
+
     def __getattr__(self, item: str) -> VisualisablePlugin:
         try:
             return self.__dict__[item]
@@ -46,6 +50,10 @@ class VisualisablePluginNameSpace(SimpleNamespace):
 
 
 class Visualiser:
+    """
+    The core visualiser that can be created to represent an instance of a window
+    """
+
     polling_registry: List[VisualisablePlugin] = []
     # raw registered plugin list
     _registered_plugins: List[Tuple[VisualisablePlugin, Set[str]]] = []
@@ -74,7 +82,9 @@ class Visualiser:
         self.initialised = False
 
     def initialise(self):
-
+        """
+        The initialisation function that initialise each registered plugin
+        """
         self._registered_plugins_mappings = VisualisablePluginNameSpace(
             **{p.name: p for p, _ in self._registered_plugins}
         )
@@ -149,7 +159,7 @@ class Visualiser:
                 for _plugin in (
                     p for p in self.plugins if isinstance(p, TriggerableMixin)
                 ):
-                    if isinstance(_plugin, ToggleableMixin) and not bool(_plugin.state):
+                    if isinstance(_plugin, ToggleableMixin) and _plugin.state.is_off():
                         # is off. skip key matching
                         continue
 
@@ -172,6 +182,10 @@ class Visualiser:
     def register_plugin(
         self, plugin: VisualisablePlugin, depends_on: Iterable[str] = None
     ):
+        """
+        Register a plugin, with an optional dependency list of plugin name.
+        The other plugins that this plugin depends on will be initialised first.
+        """
         if depends_on is None:
             depends_on = []
         depends_on = set(depends_on)
@@ -196,6 +210,10 @@ class Visualiser:
         return self._registered_plugins_mappings
 
     def run(self, regular_update_interval: Optional[float] = None):
+        """
+        The main function to start the visualisation window after everything had been
+        set up.
+        """
         if regular_update_interval:
             timer = app.Timer(
                 interval=regular_update_interval,

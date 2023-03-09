@@ -22,7 +22,13 @@ class PluginState(enum.Enum):
     OFF = 2
 
     def __bool__(self):
-        return self is PluginState.ON
+        raise ValueError("Deprecated. Use the dedicated function to test for state.")
+
+    def is_built(self):
+        return self in (PluginState.ON, PluginState.OFF)
+
+    def is_off(self):
+        return self is PluginState.OFF
 
 
 class TriggerableMixin:
@@ -65,12 +71,12 @@ class ToggleableMixin(TriggerableMixin):
         return True
 
     def get_root_mappings(self) -> List["Mapping"]:
-        if bool(self.state):
+        if self.state.is_built():
             return super().get_root_mappings()
         return []
 
     def get_modal_control(self) -> List["ModalControl"]:
-        if bool(self.state):
+        if self.state.is_built():
             return super().get_modal_control()
         return []
 
