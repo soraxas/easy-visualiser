@@ -28,6 +28,8 @@ def tick_location_generator(
 
     vec_diff = pt2 - pt1
     vec_norm = np.linalg.norm(vec_diff)
+    if vec_norm == 0:
+        return
     vec_unit = vec_diff / vec_norm
     ################################
     # scale_factor = 1
@@ -205,10 +207,12 @@ class RulerScaleVisual(LineVisual):
                     )
                     _label_pos.append(_tick_end + tick_vec_unit * 1000)
 
-            if len(_label_pos) > 0:
-                self.__ticks_label.parent = self.parent
-                self.__ticks_label.text = _label_text
+            self.__ticks_label.parent = self.parent
+            if len(_label_pos) == 0:
+                _label_text = ""
+            else:
                 self.__ticks_label.pos = _label_pos
+            self.__ticks_label.text = _label_text
 
         super().set_data(pos=pos, color=color, width=width, connect=connect)
 

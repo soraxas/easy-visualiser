@@ -12,7 +12,6 @@ from plannerGraphVisualiser.easy_visualiser.helpers import (
     compute_delta_vec_from_canvas_to_visual_coordinate,
 )
 from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping
-from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import ToggleableMixin
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
