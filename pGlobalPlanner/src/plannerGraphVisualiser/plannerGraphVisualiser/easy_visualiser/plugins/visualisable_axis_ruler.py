@@ -11,7 +11,7 @@ from plannerGraphVisualiser.easy_visualiser.helpers import (
     visual_coordinate_to_pixel_coordinate,
     compute_delta_vec_from_canvas_to_visual_coordinate,
 )
-from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping
+from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping, DummyMappingLine
 from plannerGraphVisualiser.easy_visualiser.plugin_capability import ToggleableMixin
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
     VisualisablePlugin,
@@ -54,6 +54,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
                 lambda: f"toggle measurer [{boolean_to_onoff(self.state.is_on())}]",
                 self.toggle,
             ),
+            DummyMappingLine("    Note: Hold <Alt> key to drag the measurer origin"),
         ]
 
     def turn_on_plugin(self):
