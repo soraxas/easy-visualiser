@@ -56,7 +56,7 @@ class VisualisableBathy(
 ):
     bathy_mesh = None
     bathy_interp: NearestNDInterpolator = None
-    last_min_pos = None
+    last_min_max_pos = None
 
     def __init__(
         self,
@@ -131,11 +131,15 @@ class VisualisableBathy(
             bathymetry[:, 0], bathymetry[:, 1], bathymetry[:, 2], (grid_size, grid_size)
         )
 
-        self.last_min_pos = bathymetry.min(0)  # cache
-
         xx, yy = np.meshgrid(xx, yy, indexing="xy")
 
         zz = self.other_plugins.zscaler.scaler(zz)
+
+        self.last_min_max_pos = np.empty((2, 3), dtype=np.float)
+        self.last_min_max_pos[0, :] = bathymetry.min(0)  # cache
+        self.last_min_max_pos[0, 2] = zz.min()
+        self.last_min_max_pos[1, :] = bathymetry.max(0)  # cache
+        self.last_min_max_pos[1, 2] = zz.max()
 
         data = dict(
             xs=xx,

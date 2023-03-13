@@ -3,6 +3,9 @@ import os
 from plannerGraphVisualiser.easy_visualiser.plugins.functional_zscaler import (
     AxisScalerPlugin,
 )
+from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_axis_ruler import (
+    VisualisableAxisRuler,
+)
 from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
     VisualisableStatusBar,
 )
@@ -108,6 +111,9 @@ def run():
     visualiser.register_plugin(VisualisableKOZ(graph_data_path=args.datapath))
     visualiser.register_plugin(
         VisualisablePrincipleAxisWithBathyOffset(axis_length=args.principle_axis_length)
+    )
+    visualiser.register_plugin(
+        VisualisableAxisRuler(), depends_on=["bathymetry", "zscaler"]
     )
     visualiser.register_plugin(
         VisualisableOceanCurrent(

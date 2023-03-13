@@ -30,6 +30,9 @@ class PluginState(enum.Enum):
     def is_off(self):
         return self is PluginState.OFF
 
+    def is_on(self):
+        return self is PluginState.ON
+
 
 class TriggerableMixin:
     keys: List[Union["ModalControl", "Mapping.MappingRawType"]]
