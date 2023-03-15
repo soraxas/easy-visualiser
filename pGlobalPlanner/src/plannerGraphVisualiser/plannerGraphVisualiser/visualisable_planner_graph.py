@@ -43,7 +43,7 @@ class SolutionLine:
             _path = DUMMY_LINE
         else:
             if self.offset:
-                _path[:, -1] -= self.offset
+                _path[:, -1] += self.offset
         self.line_visual.set_data(pos=_path)
 
 
