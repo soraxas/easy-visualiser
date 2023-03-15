@@ -17,7 +17,7 @@ from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin
     VisualisablePlugin,
 )
 from plannerGraphVisualiser.easy_visualiser.utils import boolean_to_onoff
-from plannerGraphVisualiser.easy_visualiser.visuals.ruler_visual import RulerScale
+from plannerGraphVisualiser.easy_visualiser.visuals.ruler import RulerScale
 
 RulerVisualsMapping = namedtuple("RulerVisualsMapping", "dim bound_slice")
 
@@ -90,6 +90,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
                     if mapping.dim == 2
                     else (lambda num: f"{num // 1000:.0f} km" if num else "")
                 ),
+                font_size=10000000,
                 scale_factor=(
                     1 / self.other_plugins.zscaler.scaler.scale_factor
                     if mapping.dim == 2

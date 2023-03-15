@@ -13,7 +13,7 @@ from .easy_visualiser.plugin_capability import (
     CallableAndFileModificationGuardableMixin,
 )
 from plannerGraphVisualiser.easy_visualiser.dummy import DUMMY_AXIS_VAL
-from plannerGraphVisualiser.gridmesh import FixedGridMesh
+from plannerGraphVisualiser.easy_visualiser.visuals.gridmesh import FixedGridMesh
 from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
 from .easy_visualiser.utils import ToggleableBool
 

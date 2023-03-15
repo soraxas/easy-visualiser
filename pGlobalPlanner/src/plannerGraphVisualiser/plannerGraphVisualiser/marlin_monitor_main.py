@@ -3,7 +3,7 @@ import os
 from plannerGraphVisualiser.easy_visualiser.plugins.functional_zscaler import (
     AxisScalerPlugin,
 )
-from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_axis_ruler import (
+from plannerGraphVisualiser.visualisable_axis_ruler import (
     VisualisableAxisRuler,
 )
 from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (

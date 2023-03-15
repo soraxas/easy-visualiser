@@ -4,7 +4,6 @@ import glob
 import numpy as np
 from PIL import Image
 from vispy.color import get_colormap
-from vispy.scene import SurfacePlot
 
 from plannerGraphVisualiser.easy_visualiser.dummy import DUMMY_AXIS_VAL
 from plannerGraphVisualiser.easy_visualiser.key_mapping import (
@@ -32,7 +31,7 @@ from plannerGraphVisualiser.easy_visualiser.utils import (
     map_array_to_0_1,
     IncrementableInt,
 )
-from plannerGraphVisualiser.gridmesh import FixedGridMesh
+from plannerGraphVisualiser.easy_visualiser.visuals.gridmesh import FixedGridMesh
 
 from .easy_visualiser.visualiser import Visualiser
 

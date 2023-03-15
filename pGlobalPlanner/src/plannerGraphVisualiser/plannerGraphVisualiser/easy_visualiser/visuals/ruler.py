@@ -1,10 +1,11 @@
 from collections import namedtuple
+from typing import Callable, List
 
 import dataclasses
 import numpy as np
 
 from vispy.scene.visuals import create_visual_node, Text
-from vispy.visuals import LineVisual
+from vispy.visuals import LineVisual, CompoundVisual
 
 
 @dataclasses.dataclass
@@ -32,7 +33,6 @@ def tick_location_generator(
         return
     vec_unit = vec_diff / vec_norm
     ################################
-    # scale_factor = 1
 
     all_ticks_factors = np.arange(0, vec_norm * scale_factor, tick_gap_length)
 
@@ -76,11 +76,17 @@ class RulerScaleVisual(LineVisual):
         tick_gap=1,
         tick_length=None,
         major_tick_every=5,
-        font_size=10000000,
-        tick_label_formatter=lambda num: f"{num:.2f}",
         scale_factor=1,
+        tick_label_callback: Callable[[float, np.ndarray, np.ndarray], None] = None,
         **kwargs,
     ):
+        """
+        tick_label_callback is a callable with:
+            1st arg: value on the ruler (i.e. length)
+            2nd arg: tick end position in the world coordinate (i.e. 2/3d coordinate)
+            3rd arg: a unit vector that represent the direction of the tick
+        """
+
         if kwargs.pop("pos", None) is not None:
             raise ValueError(
                 f"{self.__class__.__name__} does not supports " f"pos argument."
@@ -90,10 +96,10 @@ class RulerScaleVisual(LineVisual):
         self.__tick_length = tick_length
         self.__cur_vec_norm = 1
         self.__last_start_end_pos = None
-        self.__ticks_label = Text(font_size=font_size, color="white")
+        self.ticks_info = None
         # to scale the ruler
         self.scale_factor = scale_factor
-        self.tick_label_formatter = tick_label_formatter
+        self.tick_label_callback = tick_label_callback
         super().__init__(
             **kwargs,
             connect="segments",
@@ -121,12 +127,14 @@ class RulerScaleVisual(LineVisual):
     def start_end_pos(self):
         return self.__last_start_end_pos
 
-    def set_data(self, start_end_pos=None, color=None, width=None, connect=None):
+    def set_data(
+        self, start_end_pos: np.ndarray = None, color=None, width=None, connect=None
+    ):
         """Set the data used to draw this visual.
 
         Parameters
         ----------
-        pos : array
+        start_end_pos : array
             A tuple of size 2, with shape 2 or 3 specifying the starting and ending
             vertex coordinates.
         color : Color, tuple, or array
@@ -172,7 +180,7 @@ class RulerScaleVisual(LineVisual):
             # tick vector
             tick_vec_unit = get_perpendicular_vec(start_end_pos[0], start_end_pos[1])
 
-            all_ticks_info = list(
+            self.ticks_info = list(
                 tick_location_generator(
                     pt1=start_end_pos[0],
                     pt2=start_end_pos[1],
@@ -183,14 +191,13 @@ class RulerScaleVisual(LineVisual):
                 )
             )
 
-            pos = np.empty((2 + len(all_ticks_info) * 2 + 1, dim), dtype=np.float)
+            pos = np.empty((2 + len(self.ticks_info) * 2 + 1, dim), dtype=np.float)
             # actual bar of start, end
             pos[0, :] = start_end_pos[0]
             pos[1, :] = start_end_pos[1]
             ###################
 
-            _label_pos, _label_text = [], []
-            for i, tick_info in enumerate(all_ticks_info):
+            for i, tick_info in enumerate(self.ticks_info):
                 _tick_length = self.tick_length
                 if tick_info.is_major:
                     _tick_length *= 2
@@ -201,20 +208,57 @@ class RulerScaleVisual(LineVisual):
                 pos[2 + i * 2 + 1, :] = _tick_end
 
                 if tick_info.is_major:
-                    # add major tick label
-                    _label_text.append(
-                        self.tick_label_formatter(tick_info.length_from_origin)
+                    self.tick_label_callback(
+                        tick_info.length_from_origin, _tick_end, tick_vec_unit
                     )
-                    _label_pos.append(_tick_end + tick_vec_unit * 1000)
-
-            self.__ticks_label.parent = self.parent
-            if len(_label_pos) == 0:
-                _label_text = ""
-            else:
-                self.__ticks_label.pos = _label_pos
-            self.__ticks_label.text = _label_text
 
         super().set_data(pos=pos, color=color, width=width, connect=connect)
 
 
-RulerScale = create_visual_node(RulerScaleVisual)
+class RulerScaleWithLabelVisual(CompoundVisual):
+    def __init__(
+        self,
+        tick_label_formatter: Callable[[float], str] = lambda num: f"{num:.2f}",
+        font_size=100,
+        font_color="white",
+        **kwargs,
+    ):
+        # self.tick_label_formatter = tick_label_formatter
+        self.label_text = []
+        self.label_pos = []
+
+        def label_collector(
+            value: float, tick_end: np.ndarray, tick_unit_vec: np.ndarray
+        ):
+            self.label_text.append(tick_label_formatter(value))
+            self.label_pos.append(tick_end + tick_unit_vec * font_size / 1000)
+
+        self._ticks_label = Text(font_size=font_size, color=font_color)
+        self._ticks_ruler = RulerScaleVisual(
+            tick_label_callback=label_collector, **kwargs
+        )
+
+        CompoundVisual.__init__(self, [self._ticks_ruler, self._ticks_label])
+
+    @property
+    def start_end_pos(self):
+        return self._ticks_ruler.start_end_pos
+
+    def set_data(self, **kwargs):
+        # clear previous labels
+        self.label_text.clear()
+        self.label_pos.clear()
+
+        # the following will set our list via callback
+        self._ticks_ruler.set_data(**kwargs)
+
+        if len(self.label_pos) == 0:
+            self._ticks_label.text = ""
+        else:
+            self._ticks_label.text = self.label_text
+            self._ticks_label.pos = self.label_pos
+
+
+RulerScale = create_visual_node(RulerScaleWithLabelVisual)
+
+__all__ = ["RulerScale"]
