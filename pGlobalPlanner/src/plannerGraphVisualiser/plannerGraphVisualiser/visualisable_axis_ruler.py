@@ -69,6 +69,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
             return False
         for visual in self.ruler_visuals:
             visual.parent = None
+        self.update_pos_timer.stop()
         return True
 
     @property
@@ -111,9 +112,12 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
 
         @self.visualiser.canvas.connect
         def on_key_press(event):
-            if keys.ALT in event.modifiers:
+            if keys.ALT is event.key:
                 self.update_pos_timer.start()
-            else:
+
+        @self.visualiser.canvas.connect
+        def on_key_release(event):
+            if keys.ALT is event.key:
                 self.update_pos_timer.stop()
 
     def move_element_origin_to_pos(self, factor=35):
