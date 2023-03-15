@@ -155,7 +155,7 @@ class VisualisableOceanCurrent(
             antialias=True,
             arrow_size=3,
             arrow_type="angle_90",
-            parent=self.visualiser.view.scene,
+            parent=self.visualiser.visual_parent,
         )
 
     def __get_subset_current_data(self):

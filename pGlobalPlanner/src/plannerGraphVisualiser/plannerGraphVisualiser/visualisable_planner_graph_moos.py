@@ -20,7 +20,7 @@ class VisualisablePlannerGraphWithMossMsg(
         super().construct_plugin()
         self.moos = pMoosPlannerVisualiser.get_instance()
         self.moos.register_variable(PLAN_VARIABLE, self.__plan_msg_cb)
-        self.sol_lines = SolutionLine(self.visualiser.view.scene, color="cyan")
+        self.sol_lines = SolutionLine(self.visualiser.visual_parent, color="cyan")
         return True
 
     @property

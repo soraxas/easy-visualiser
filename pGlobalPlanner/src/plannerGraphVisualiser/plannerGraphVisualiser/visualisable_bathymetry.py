@@ -112,7 +112,7 @@ class VisualisableBathy(
             # shading='flat',
             # shading=None,
             # color='blue',
-            parent=self.visualiser.view.scene,
+            parent=self.visualiser.visual_parent,
         )
 
     def __get_data(self) -> Dict:

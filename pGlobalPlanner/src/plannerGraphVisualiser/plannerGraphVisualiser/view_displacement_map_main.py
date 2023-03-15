@@ -154,7 +154,7 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
             DUMMY_AXIS_VAL,
             DUMMY_AXIS_VAL,
             shading="smooth",
-            parent=self.visualiser.view.scene,
+            parent=self.visualiser.visual_parent,
             # antialias=float(self._antialias),
         )
         self._reload_pos_data(update_grid=True)

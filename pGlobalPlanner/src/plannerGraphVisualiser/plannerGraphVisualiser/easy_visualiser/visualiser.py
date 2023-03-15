@@ -209,6 +209,11 @@ class Visualiser:
             raise RuntimeError("Visualiser has not been initialised yet!")
         return self._registered_plugins_mappings
 
+    @property
+    def visual_parent(self):
+        """An easy way to reference the parent of all visual elements."""
+        return self.view.scene
+
     def run(self, regular_update_interval: Optional[float] = None):
         """
         The main function to start the visualisation window after everything had been

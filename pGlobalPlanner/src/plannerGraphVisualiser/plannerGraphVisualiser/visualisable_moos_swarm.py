@@ -167,7 +167,7 @@ class VisualisableMoosSwarm(
         super().construct_plugin()
 
         # self.axis_visual = XYZAxis(
-        #     parent=self.visualiser.view.scene,
+        #     parent=self.visualiser.visual_parent,
         #     width=5,
         # )
 
@@ -236,14 +236,14 @@ class VisualisableMoosSwarm(
                 #     symbol="triangle_up",
                 #     # faces=faces,
                 #     # color=(0.5, 0.7, 0.5, 1),
-                #     parent=self.visualiser.view.scene,
+                #     parent=self.visualiser.visual_parent,
                 #     # shading="smooth",
                 # )
                 self.vehicle_visual[v.name] = Mesh(
                     vertices=vertices,
                     faces=faces,
                     color=(0.5, 0.7, 0.5, 1),
-                    parent=self.visualiser.view.scene,
+                    parent=self.visualiser.visual_parent,
                     shading="smooth",
                 )
 
@@ -262,7 +262,7 @@ class VisualisableMoosSwarm(
             # self.vehicle_visual[v.name].transform.scale([self.vehicle_scale] * 3)
             # # # Create a colored `MeshVisual`.
             # # mesh = Mesh(vertices, faces, color=(.5, .7, .5, 1),
-            # #             parent=self.visualiser.view.scene,
+            # #             parent=self.visualiser.visual_parent,
             # #             shading='smooth')
             # # self.vehicle_visual[v.name].transform.rotate(90, (1, 0, 0))
             #

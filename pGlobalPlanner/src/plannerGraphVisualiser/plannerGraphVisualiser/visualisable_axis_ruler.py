@@ -29,11 +29,15 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
 
     def __init__(
         self,
+        clip_to_bounding_box: bool = False,
     ):
         super().__init__()
-        self.origin_pos_visuals = np.array([0.0, 0.0, 0.0])
+        # our target origin in 3d world space
+        self.target_origin_visual = np.array([0.0, 0.0, 0.0])
+        # our target origin in 2d pixel space
         self.target_pos_canvas = np.array([0, 0])
         self.__initialised = False
+        self.clip_to_bounding_box = clip_to_bounding_box
 
         self.update_pos_timer = app.Timer(
             interval=0.01,
@@ -60,13 +64,15 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
     def turn_on_plugin(self):
         if not super().turn_on_plugin():
             return False
+        # reattach all rulers
         for visual in self.ruler_visuals:
-            visual.parent = self.visualiser.view.scene
+            visual.parent = self.visualiser.visual_parent
         return True
 
     def turn_off_plugin(self):
         if not super().turn_off_plugin():
             return False
+        # deattach all rulers
         for visual in self.ruler_visuals:
             visual.parent = None
         self.update_pos_timer.stop()
@@ -82,7 +88,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
         self.ruler_visuals = [
             RulerScale(
                 color=(0.85, 0.85, 0.85, 1),
-                parent=self.visualiser.view.scene,
+                parent=self.visualiser.visual_parent,
                 tick_length=10000,
                 tick_gap=(200 if mapping.dim == 2 else 10000),
                 antialias=True,
@@ -120,7 +126,15 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
             if keys.ALT is event.key:
                 self.update_pos_timer.stop()
 
+    @property
+    def origin_visual_element(self):
+        """By default, we will just the first component as our origin element."""
+        return self.ruler_visuals[0]
+
     def move_element_origin_to_pos(self, factor=35):
+        """
+        Move the axis origin to whever the mous is pointing.
+        """
         if any(
             stuff is None
             for stuff in (
@@ -130,44 +144,46 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
         ):
             return
 
-        if self.ruler_visuals[0].start_end_pos is None:
+        # get current origin
+        if self.origin_visual_element.start_end_pos is None:
             _origin = np.zeros(3)
         else:
-            _origin = self.ruler_visuals[0].start_end_pos[0]
-        current_pos = visual_coordinate_to_pixel_coordinate(
-            self.ruler_visuals[0], _origin
+            _origin = self.origin_visual_element.start_end_pos[0]
+        current_canvas_pos = visual_coordinate_to_pixel_coordinate(
+            self.origin_visual_element, _origin
         )[:2]
 
         delta = compute_delta_vec_from_canvas_to_visual_coordinate(
-            self.visualiser.view.camera, (self.target_pos_canvas - current_pos)
+            self.visualiser.view.camera, (self.target_pos_canvas - current_canvas_pos)
         )
-        new_origin = self.origin_pos_visuals + factor * delta
+        new_target_origin = self.target_origin_visual + factor * delta
 
-        # clip new pos to boundary box
-        new_origin = np.clip(
-            new_origin,
-            self.other_plugins.bathymetry.last_min_max_pos[0],
-            self.other_plugins.bathymetry.last_min_max_pos[1],
-        )
+        if self.clip_to_bounding_box:
+            # clip new pos to boundary box
+            new_target_origin = np.clip(
+                new_target_origin,
+                self.other_plugins.bathymetry.last_min_max_pos[0],
+                self.other_plugins.bathymetry.last_min_max_pos[1],
+            )
 
         for i, ruler_visual in enumerate(self.ruler_visuals):
-            other_end = new_origin.copy()
+            other_end = new_target_origin.copy()
             # map from ruler visuals into the corresponding slice to index bounds
             mapping = self.__ruler_visuals_mapping[i]
             other_end[mapping.dim] = self.other_plugins.bathymetry.last_min_max_pos[
                 mapping.bound_slice
             ]
             ruler_visual.set_data(
-                start_end_pos=(new_origin, other_end),
+                start_end_pos=(new_target_origin, other_end),
                 width=5,
             )
 
-        self.origin_pos_visuals[:] = new_origin
+        self.target_origin_visual[:] = new_target_origin
 
         if not self.__initialised:
             self.__initialised = True
             self.update_pos_timer.stop()
 
         # how far away are we from our desire pos?
-        if np.linalg.norm(self.target_pos_canvas - current_pos) <= 1:
+        if np.linalg.norm(self.target_pos_canvas - current_canvas_pos) <= 1:
             self.update_pos_timer.stop()

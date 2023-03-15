@@ -72,7 +72,7 @@ class VisualisableKOZ(
         self.keepout_zone_mesh = scene.Mesh(
             # vertices=[],
             # faces=[],
-            parent=self.visualiser.view.scene,
+            parent=self.visualiser.visual_parent,
             # color=(.5, .5, .5),
             # color=(0.5, 0.5, 0.5, 0.7),
             color=np.array([181.,71,48,170])/255,

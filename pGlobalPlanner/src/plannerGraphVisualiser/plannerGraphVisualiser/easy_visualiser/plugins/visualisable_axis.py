@@ -38,7 +38,7 @@ class VisualisablePrincipleAxis(VisualisablePlugin):
         super().construct_plugin()
 
         self.axis_visual = XYZAxis(
-            parent=self.visualiser.view.scene,
+            parent=self.visualiser.visual_parent,
             width=5,
         )
         self.axis_visual.set_data(pos=self._axis_pos)

@@ -143,11 +143,11 @@ class VisualisablePlannerGraph(
 
     def construct_plugin(self) -> None:
         super().construct_plugin()
-        self.sol_lines = SolutionLine(self.visualiser.view.scene)
-        self.fake_sol_lines = SolutionLine(self.visualiser.view.scene, offset=200000)
+        self.sol_lines = SolutionLine(self.visualiser.visual_parent)
+        self.fake_sol_lines = SolutionLine(self.visualiser.visual_parent, offset=200000)
         self.graph_solution_extra_toggle.set(not self.graph_toggle.get())
         self.lines = scene.Line(
-            antialias=False, method="gl", parent=self.visualiser.view.scene, width=3
+            antialias=False, method="gl", parent=self.visualiser.visual_parent, width=3
         )
         self.lines.set_data(pos=DUMMY_LINE, connect=DUMMY_CONNECT, color=DUMMY_COLOUR)
         self.cbar_widget.clim = (np.nan, np.nan)
