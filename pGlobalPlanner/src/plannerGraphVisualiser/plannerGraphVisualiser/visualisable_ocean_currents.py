@@ -1,4 +1,7 @@
+import os
 from typing import Dict
+
+import dataclasses
 from vispy.scene.visuals import Arrow
 from vispy import app
 
@@ -24,6 +27,15 @@ from .easy_visualiser.key_mapping import Key
 from .easy_visualiser.utils import ToggleableBool
 
 
+@dataclasses.dataclass
+class CurrentData:
+    x: np.ndarray
+    y: np.ndarray
+    z: np.ndarray
+    u: np.ndarray
+    v: np.ndarray
+
+
 class VisualisableOceanCurrent(
     CallableAndFileModificationGuardableMixin,
     ToggleableMixin,
@@ -37,6 +49,7 @@ class VisualisableOceanCurrent(
         ocean_current_toggle: ToggleableBool,
         ocean_current_datapath: str,
         colormap: str = "plasma",
+        default_choice_size: int = 1000,
     ):
         super().__init__()
         self.ocean_current_toggle = ocean_current_toggle
@@ -76,25 +89,40 @@ class VisualisableOceanCurrent(
             iterations=-1,
         )
 
-        self.__choices = slice(None)
-        self.__choices_size = None
+        # self.__viewing_index = slice(None)
+        self.__viewing_index = None
+        self.__choices_size = default_choice_size
         self.__last_current_size = None
+        self.__currents_data = None
+
+    @property
+    def viewing_index(self) -> slice:
+        if self.__viewing_index is None:
+            ocean_current_size = self.raw_ocean_datapack["x"].shape[0]
+            self.__viewing_index = np.random.choice(
+                ocean_current_size, self.__choices_size
+            )
+        return self.__viewing_index
+
+    def clear_cached_viewing_current_data(self):
+        # clear viewing index to trigger recomputing random index
+        self.__viewing_index = None
+        self.__currents_data = None
 
     def __toggle_currents_cb(self):
         self.ocean_current_toggle.toggle()
         self.toggle()
 
     def __change_currents_scale_cb(self, scale):
-        if self.__choices_size is None:
-            self.__choices_size = 1000
+        self.clear_cached_viewing_current_data()
 
-        self.__choices_size = int(self.__choices_size * scale)
-        if self.__choices_size > self.__last_current_size:
-            self.__choices_size = self.__last_current_size
-        if self.__choices_size <= 1:
-            self.__choices_size = 1
+        ocean_current_size = self.raw_ocean_datapack["x"].shape[0]
 
-        self.__choices = np.random.choice(self.__last_current_size, self.__choices_size)
+        # clip to min and max
+        self.__choices_size = np.clip(
+            int(self.__choices_size * scale), 1, ocean_current_size
+        )
+
         self.on_update()
 
     def on_update_guard(self) -> bool:
@@ -130,25 +158,33 @@ class VisualisableOceanCurrent(
             parent=self.visualiser.view.scene,
         )
 
-    def __get_data(self) -> Dict:
-        currents_data: Dict = np.load(self.target_file, allow_pickle=True).item()
+    def __get_subset_current_data(self):
+        self.raw_ocean_datapack = np.load(self.target_file, allow_pickle=True).item()
+        currents_data: Dict = self.raw_ocean_datapack.copy()
 
+        currents_data["z"] = self.other_plugins.zscaler.scaler(currents_data["z"])
+
+        currents_data["x"] = np.array(currents_data["x"])[self.viewing_index]
+        currents_data["y"] = np.array(currents_data["y"])[self.viewing_index]
+        currents_data["z"] = np.array(currents_data["z"])[self.viewing_index]
+        currents_data["u"] = np.array(currents_data["u"])[self.viewing_index]
+        currents_data["v"] = np.array(currents_data["v"])[self.viewing_index]
+
+        self.__last_current_size = currents_data["x"].shape[0]
+        return currents_data
+
+    def __get_data(self) -> Dict:
+        # tick animate
         if self.animate_timer.running:
             self.ocean_current_scale += 500
             if self.ocean_current_scale >= self.ocean_current_max_scale:
                 self.ocean_current_scale = 0
 
-        currents_data["z"] = self.other_plugins.zscaler.scaler(currents_data["z"])
-
-        self.__last_current_size = currents_data["x"].shape[0]
-        if self.__choices_size is None:
-            self.__change_currents_scale_cb(1)
-
-        currents_data["x"] = np.array(currents_data["x"])[self.__choices]
-        currents_data["y"] = np.array(currents_data["y"])[self.__choices]
-        currents_data["z"] = np.array(currents_data["z"])[self.__choices]
-        currents_data["u"] = np.array(currents_data["u"])[self.__choices]
-        currents_data["v"] = np.array(currents_data["v"])[self.__choices]
+        # only load data on demand
+        _mtime = os.path.getmtime(self.target_file)
+        if self.__currents_data is None or self._last_modify_time < _mtime:
+            self.__currents_data = self.__get_subset_current_data()
+        currents_data = self.__currents_data
 
         pos = np.empty([currents_data["x"].shape[0] * 2, 3])
         pos[::2, 0] = currents_data["x"]

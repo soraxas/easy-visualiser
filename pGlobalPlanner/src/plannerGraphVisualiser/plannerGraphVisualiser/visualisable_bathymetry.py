@@ -127,13 +127,42 @@ class VisualisableBathy(
         ###########################################
 
         grid_size = max(100, int(bathymetry[:, 0].shape[0] ** 0.5) - 30)
+
+        # print(grid_size)
+
+        grid_size = 350
+
         xx, yy, zz = create_grid_mesh(
             bathymetry[:, 0], bathymetry[:, 1], bathymetry[:, 2], (grid_size, grid_size)
         )
 
         xx, yy = np.meshgrid(xx, yy, indexing="xy")
 
+        from scipy.spatial import cKDTree
+
+
+        tree = cKDTree(np.stack([bathymetry[:, 0], bathymetry[:, 1]]).T)
+
+        _ori_shape = xx.shape
+
+        dist, ii = tree.query(np.stack([xx.ravel(), yy.ravel()]).T)
+
+        dist = dist.reshape(_ori_shape)
+
+        
+        mask = (dist > 5000)
+        
+
+        xx[mask] = np.nan
+        yy[mask] = np.nan
+
+
+        # exit()
+
         zz = self.other_plugins.zscaler.scaler(zz)
+
+        is_land_mask = (zz > 0)
+        # zz[is_land_mask] = 50
 
         self.last_min_max_pos = np.empty((2, 3), dtype=np.float)
         self.last_min_max_pos[0, :] = bathymetry.min(0)  # cache
@@ -149,7 +178,17 @@ class VisualisableBathy(
         if self.bathy_colorscale_toggle:
             cmap = get_colormap("jet")
             colours = cmap.map((zz - zz.min()) / (zz.max() - zz.min()))
+            
             data["colors"] = colours.reshape(grid_size, grid_size, 4)
+        else:
+            default_color = (0.5, 0.5, 1, 1)
+
+            default_color = (0.78, 0.78, 0.78, 1)
+
+            data["colors"] = np.empty((grid_size, grid_size, 4), dtype=np.float)
+            data["colors"][:] = default_color
+            data["colors"][is_land_mask] = np.array([133,87,35, 255]) / 255
+
         return data
 
     def turn_on_plugin(self):
@@ -176,10 +215,10 @@ class VisualisableBathy(
     def on_update(self):
         self.turn_on_plugin()
 
-        if not self.bathy_colorscale_toggle:
-            self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors = None
-            self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors_indexed_by_faces = (
-                None
-            )
+        # if not self.bathy_colorscale_toggle:
+        #     self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors = None
+        #     self.bathy_mesh._GridMeshVisual__meshdata._vertex_colors_indexed_by_faces = (
+        #         None
+        #     )
         if not self.had_set_range:
             self.set_range()

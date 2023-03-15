@@ -74,7 +74,8 @@ class VisualisableKOZ(
             # faces=[],
             parent=self.visualiser.view.scene,
             # color=(.5, .5, .5),
-            color=(0.5, 0.5, 0.5, 0.7),
+            # color=(0.5, 0.5, 0.5, 0.7),
+            color=np.array([181.,71,48,170])/255,
         )
         self.keepout_zone_mesh.set_gl_state("translucent")
 

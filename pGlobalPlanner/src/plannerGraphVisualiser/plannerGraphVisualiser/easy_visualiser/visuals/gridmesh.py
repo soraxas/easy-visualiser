@@ -4,6 +4,8 @@ from vispy.scene.visuals import create_visual_node
 from vispy.visuals import MeshVisual
 from vispy.visuals.gridmesh import GridMeshVisual
 
+import vispy
+print(vispy.__file__)
 
 class FixedGridMeshVisual(GridMeshVisual):
     def set_data(self, xs=None, ys=None, zs=None, colors=None):
