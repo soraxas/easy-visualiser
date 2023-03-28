@@ -55,7 +55,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
         self.keys = [
             Mapping(
                 "m",
-                lambda: f"toggle measurer [{boolean_to_onoff(self.state.is_on())}]",
+                lambda: f"toggle measurer [{boolean_to_onoff(self.state.is_on())}] origin[{self.target_origin_visual}]",
                 self.toggle,
             ),
             DummyMappingLine("    Note: Hold <Alt> key to drag the measurer origin"),

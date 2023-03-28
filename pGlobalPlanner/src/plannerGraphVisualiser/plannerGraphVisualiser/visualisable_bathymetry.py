@@ -2,6 +2,7 @@ from typing import Tuple, Dict
 
 import numpy as np
 from scipy.interpolate import griddata, NearestNDInterpolator
+from scipy.spatial import cKDTree
 from vispy.color import get_colormap
 
 from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
@@ -48,6 +49,14 @@ def create_grid_mesh(
     return xr[0, :], yr[:, 0], Z
 
 
+def estimate_grid_resolution(kd_tree, bathy_points: np.ndarray) -> float:
+    dist, ii = kd_tree.query(bathy_points, k=2)
+
+    # we would use the second-closest point to estimate the resolution of bluelink grid
+    second_closest = dist[:, 1]
+    return np.mean(second_closest[second_closest > 0])
+
+
 class VisualisableBathy(
     CallableAndFileModificationGuardableMixin,
     ToggleableMixin,
@@ -57,17 +66,21 @@ class VisualisableBathy(
     bathy_mesh = None
     bathy_interp: NearestNDInterpolator = None
     last_min_max_pos = None
+    seabed_colour = (0.78, 0.78, 0.78, 1)
+    land_colour = (0.522, 0.341, 0.137, 1)
 
     def __init__(
         self,
         bathy_toggle: ToggleableBool,
         bathy_colorscale_toggle: ToggleableBool,
         depth_datapath: str,
+        only_display_actual_bathy: bool = True,
     ):
         super().__init__()
         self.bathy_toggle = bathy_toggle
         self.bathy_colorscale_toggle = bathy_colorscale_toggle
         self.depth_datapath = depth_datapath
+        self._only_display_actual_bathy = only_display_actual_bathy
         self.guarding_callable = lambda: self.bathy_toggle
         self.keys = [
             ModalControl(
@@ -128,41 +141,35 @@ class VisualisableBathy(
 
         grid_size = max(100, int(bathymetry[:, 0].shape[0] ** 0.5) - 30)
 
-        # print(grid_size)
-
-        grid_size = 350
-
         xx, yy, zz = create_grid_mesh(
             bathymetry[:, 0], bathymetry[:, 1], bathymetry[:, 2], (grid_size, grid_size)
         )
 
         xx, yy = np.meshgrid(xx, yy, indexing="xy")
 
-        from scipy.spatial import cKDTree
+        if self._only_display_actual_bathy:
+            given_bathy_points = np.stack([bathymetry[:, 0], bathymetry[:, 1]]).T
+            tree = cKDTree(given_bathy_points)
 
+            dist, ii = tree.query(np.stack([xx.ravel(), yy.ravel()]).T)
 
-        tree = cKDTree(np.stack([bathymetry[:, 0], bathymetry[:, 1]]).T)
+            # match our shape with our bathy mesh grid
+            dist = dist.reshape(xx.shape)
 
-        _ori_shape = xx.shape
+            resolution = estimate_grid_resolution(tree, given_bathy_points)
 
-        dist, ii = tree.query(np.stack([xx.ravel(), yy.ravel()]).T)
+            mask = (
+                dist > (np.sqrt(2) * resolution)
+            ) & (  # far away from existing bathy point
+                zz <= 0
+            )  # and it's not above ground
 
-        dist = dist.reshape(_ori_shape)
-
-        
-        mask = (dist > 5000)
-        
-
-        xx[mask] = np.nan
-        yy[mask] = np.nan
-
-
-        # exit()
+            xx[mask] = np.nan
+            yy[mask] = np.nan
 
         zz = self.other_plugins.zscaler.scaler(zz)
 
-        is_land_mask = (zz > 0)
-        # zz[is_land_mask] = 50
+        is_land_mask = zz >= 0
 
         self.last_min_max_pos = np.empty((2, 3), dtype=np.float)
         self.last_min_max_pos[0, :] = bathymetry.min(0)  # cache
@@ -178,16 +185,12 @@ class VisualisableBathy(
         if self.bathy_colorscale_toggle:
             cmap = get_colormap("jet")
             colours = cmap.map((zz - zz.min()) / (zz.max() - zz.min()))
-            
+
             data["colors"] = colours.reshape(grid_size, grid_size, 4)
         else:
-            default_color = (0.5, 0.5, 1, 1)
-
-            default_color = (0.78, 0.78, 0.78, 1)
-
             data["colors"] = np.empty((grid_size, grid_size, 4), dtype=np.float)
-            data["colors"][:] = default_color
-            data["colors"][is_land_mask] = np.array([133,87,35, 255]) / 255
+            data["colors"][~is_land_mask] = self.seabed_colour
+            data["colors"][is_land_mask] = self.land_colour
 
         return data
 

@@ -97,6 +97,7 @@ def run():
             bathy_toggle=args.bathymetry,
             bathy_colorscale_toggle=args.bathymetry_colour_scale,
             depth_datapath=args.depth_datapath,
+            only_display_actual_bathy=True,
         )
     )
     visualiser.register_plugin(
@@ -113,7 +114,10 @@ def run():
         VisualisablePrincipleAxisWithBathyOffset(axis_length=args.principle_axis_length)
     )
     visualiser.register_plugin(
-        VisualisableAxisRuler(), depends_on=["bathymetry", "zscaler"]
+        VisualisableAxisRuler(
+            clip_to_bounding_box=True,
+        ),
+        depends_on=["bathymetry", "zscaler"],
     )
     visualiser.register_plugin(
         VisualisableOceanCurrent(

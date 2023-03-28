@@ -1,14 +1,13 @@
-from vispy import visuals
 from vispy.geometry import create_grid_mesh
 from vispy.scene.visuals import create_visual_node
 from vispy.visuals import MeshVisual
 from vispy.visuals.gridmesh import GridMeshVisual
 
-import vispy
-print(vispy.__file__)
+import numpy as np
+
 
 class FixedGridMeshVisual(GridMeshVisual):
-    def set_data(self, xs=None, ys=None, zs=None, colors=None):
+    def set_data(self, xs=None, ys=None, zs=None, colors=None, filter_nan=True):
         """Update the mesh data.
 
         Parameters
@@ -44,6 +43,28 @@ class FixedGridMeshVisual(GridMeshVisual):
 
             # Flip the normal every 2nd index
             indices[1::2, :] = indices[1::2, ::-1]
+
+            if filter_nan:
+                # get all vertices that contains nan
+                nan_vertices = np.any(np.isnan(vertices), axis=1)
+                # set them to default value
+                # NOTE: we do not remove them from the array, because the faces/indices array
+                #       reference those indices.
+                #       - if we remove them, the indices will be changed.
+                #       - on the other hand, if we remain those nan values, the open-gl will
+                #         exhibit some weird behaviour (not crashing, but behave strangely)
+                #       - if the face indices do not reference the vertices, their actual value
+                #         "shouldn't" matters.
+                vertices[np.any(np.isnan(vertices), axis=1)] = 0
+
+                # put the vertices into indices
+                invalid_vertex_indices = np.unique(np.where(nan_vertices))
+                # filter out face indices
+                indices = indices[
+                    np.all(
+                        np.isin(indices, invalid_vertex_indices, invert=True), axis=1
+                    )
+                ]
 
             self._GridMeshVisual__meshdata.set_vertices(vertices)
             self._GridMeshVisual__meshdata.set_faces(indices)
