@@ -1,30 +1,23 @@
+import dataclasses
 import os
 from typing import Dict
 
-import dataclasses
-from vispy.scene.visuals import Arrow
-from vispy import app
-
 import numpy as np
+from vispy import app
 from vispy.color import get_colormap
+from vispy.scene.visuals import Arrow
 
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from .easy_visualiser.plugin_capability import (
-    ToggleableMixin,
+from easy_visualiser.dummy import DUMMY_ARROW, DUMMY_COLOUR, DUMMY_LINE
+from easy_visualiser.key_mapping import Key
+from easy_visualiser.modal_control import ModalControl
+from easy_visualiser.plugin_capability import (
     CallableAndFileModificationGuardableMixin,
     IntervalUpdatableMixin,
     PluginState,
+    ToggleableMixin,
 )
-from plannerGraphVisualiser.easy_visualiser.dummy import (
-    DUMMY_COLOUR,
-    DUMMY_LINE,
-    DUMMY_ARROW,
-)
-from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
-from .easy_visualiser.key_mapping import Key
-from .easy_visualiser.utils import ToggleableBool
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.utils import ToggleableBool
 
 
 @dataclasses.dataclass

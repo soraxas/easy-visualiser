@@ -1,25 +1,23 @@
-from types import SimpleNamespace
-
 import dataclasses
-from vispy import scene, app
+import os
+from types import SimpleNamespace
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
-from typing import List, Tuple, Dict, Callable, Optional, Union, Iterable, Set
+from vispy import app, scene
+from vispy.scene import Grid, Widget
 
-from vispy.scene import Widget, Grid
-
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-    VisualisablePluginInitialisationError,
-)
+from .key_mapping import Mapping
+from .modal_control import ModalControl, ModalState
 from .plugin_capability import (
-    TriggerableMixin,
-    WidgetsMixin,
     PluginState,
     ToggleableMixin,
+    TriggerableMixin,
+    WidgetsMixin,
 )
-from .modal_control import ModalControl, ModalState
-from .key_mapping import Mapping
+from .plugins import VisualisablePlugin, VisualisablePluginInitialisationError
 from .utils import topological_sort
+
+os.putenv("NO_AT_BRIDGE", "1")
 
 
 @dataclasses.dataclass

@@ -1,46 +1,24 @@
 import os
-
-from plannerGraphVisualiser.easy_visualiser.plugins.functional_zscaler import (
-    AxisScalerPlugin,
-)
-from plannerGraphVisualiser.visualisable_axis_ruler import (
-    VisualisableAxisRuler,
-)
-from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
-    VisualisableStatusBar,
-)
-from plannerGraphVisualiser.easy_visualiser.utils import ToggleableBool
-from plannerGraphVisualiser.visualisable_axis_with_bathy_offset import (
-    VisualisablePrincipleAxisWithBathyOffset,
-)
-from plannerGraphVisualiser.visualisable_planner_graph_moos import (
-    VisualisablePlannerGraphWithMossMsg,
-)
-
-os.putenv("NO_AT_BRIDGE", "1")
-
-from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
-from plannerGraphVisualiser.visualisable_koz import VisualisableKOZ
-from plannerGraphVisualiser.visualisable_moos_swarm import (
-    VisualisableMoosSwarm,
-    SwarmModelType,
-)
-from plannerGraphVisualiser.visualisable_ocean_currents import VisualisableOceanCurrent
-from plannerGraphVisualiser.visualisable_planner_graph import VisualisablePlannerGraph
-from .easy_visualiser.visualiser import Visualiser
-
 import subprocess
 import sys
 
-try:
-    from tap import Tap
-except ModuleNotFoundError:
+from tap import Tap
 
-    def install(package):
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-    install("typed-argument-parser")
-    from tap import Tap
+from easy_visualiser.plugins.ext import (
+    VisualisableAxisRuler,
+    VisualisableBathy,
+    VisualisableKOZ,
+    VisualisableMoosSwarm,
+    VisualisableOceanCurrent,
+    VisualisablePlannerGraph,
+    VisualisablePlannerGraphWithMossMsg,
+    VisualisablePrincipleAxisWithBathyOffset,
+)
+from easy_visualiser.plugins.ext.visualisable_moos_swarm import SwarmModelType
+from easy_visualiser.plugins.functional_zscaler import AxisScalerPlugin
+from easy_visualiser.plugins.visualisable_status_bar import VisualisableStatusBar
+from easy_visualiser.utils import ToggleableBool
+from easy_visualiser.visualiser import Visualiser
 
 
 class PlannerVisualiserArgParser(Tap):

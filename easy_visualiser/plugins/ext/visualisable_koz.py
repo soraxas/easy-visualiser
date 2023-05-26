@@ -5,15 +5,12 @@ import numpy as np
 from scipy.interpolate import griddata
 from vispy import scene
 
-from plannerGraphVisualiser import KeepoutZone
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from .easy_visualiser.plugin_capability import (
+from easy_visualiser.plugin_capability import (
     FileModificationGuardableMixin,
     IntervalUpdatableMixin,
 )
-from plannerGraphVisualiser.visualisable_bathymetry import VisualisableBathy
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.plugins.ext.visualisable_bathymetry import VisualisableBathy
 
 AVG_OCEAN_DEPTH = 4_000
 
@@ -80,7 +77,6 @@ class VisualisableKOZ(
         self.keepout_zone_mesh.set_gl_state("translucent")
 
     def on_update(self):
-
         vertices = []
         faces = []
 
@@ -122,3 +118,79 @@ class VisualisableKOZ(
             )
             for i in range(len(pdata["keepout_zones_depths"]))
         ]
+
+
+class Wall:
+    def __init__(self, xy_start, xy_goal, depth, bathy_interp):
+        self.xy_start = xy_start
+        self.xy_goal = xy_goal
+        self.depth = depth
+        self.start_idx = 0
+        self.bathy_interp = bathy_interp
+
+    def get_vertices(self):
+        depth1 = -self.depth
+        depth2 = -self.depth
+
+        if self.bathy_interp is not None:
+            # cut it off at the bathymetry
+            depth1 = max(self.bathy_interp(*self.xy_start), -self.depth)
+            depth2 = max(self.bathy_interp(*self.xy_goal), -self.depth)
+
+        return (
+            (*self.xy_start, 0),
+            (*self.xy_start, depth1),
+            (*self.xy_goal, 0),
+            (*self.xy_goal, depth2),
+        )
+
+    def at(self, idx):
+        return self.start_idx + idx
+
+    def get_faces(self):
+        return (self.at(0), self.at(1), self.at(2)), (
+            self.at(1),
+            self.at(2),
+            self.at(3),
+        )
+
+
+class KeepoutZone:
+    def __init__(self, depth, points, bathy_interp) -> None:
+        self.walls = []
+        self.depth = depth
+
+        _start_idx = 0
+        for i in range(len(points)):
+            w = Wall(
+                points[i],
+                points[(i + 1) % len(points)],
+                depth=self.depth,
+                bathy_interp=bathy_interp,
+            )
+            w.start_idx = _start_idx
+            _start_idx += len(w.get_vertices())
+            self.walls.append(w)
+
+    @property
+    def vertices(self):
+        for w in self.walls:
+            yield from w.get_vertices()
+
+    @property
+    def faces(self):
+        for w in self.walls:
+            yield from w.get_faces()
+
+    @property
+    def depth(self):
+        return self.__depth
+
+    @depth.setter
+    def depth(self, value):
+        self.__depth = value
+        for w in self.walls:
+            w.depth = value
+
+    def __repr__(self) -> str:
+        return f"{np.array([w.xy_start for w in self.walls])}"

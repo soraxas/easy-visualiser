@@ -1,19 +1,20 @@
+import argparse
 import enum
 import os
-from abc import ABC, abstractmethod
-import argparse
-from typing import Optional, Callable, List, Dict, Type, Tuple, TYPE_CHECKING, Union
 import sys
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Type, Union
+
 from vispy.scene import Widget
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict, Literal, overload  # pylint: disable=no-name-in-module
+    from typing import Literal, TypedDict, overload  # pylint: disable=no-name-in-module
 else:
-    from typing_extensions import TypedDict, Literal, overload
+    from typing_extensions import Literal, TypedDict, overload
 
 if TYPE_CHECKING:
-    from .modal_control import ModalControl
     from .key_mapping import Mapping
+    from .modal_control import ModalControl
 
 
 class PluginState(enum.Enum):

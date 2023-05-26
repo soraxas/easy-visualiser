@@ -1,6 +1,5 @@
 import numpy as np
 
-
 FAR_AWAY_LOCATION = 0
 
 DUMMY_LINE = np.array(

@@ -1,16 +1,14 @@
 from abc import ABC
-from typing import Type, TYPE_CHECKING, Optional
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    PluginState,
-    IntervalUpdatableMixin,
+from typing import TYPE_CHECKING, Optional, Type
+
+from easy_visualiser.plugin_capability import (
     GuardableMixin,
+    IntervalUpdatableMixin,
+    PluginState,
 )
 
 if TYPE_CHECKING:
-    from plannerGraphVisualiser.easy_visualiser.visualiser import (
-        Visualiser,
-        VisualisablePluginNameSpace,
-    )
+    from easy_visualiser.visualiser import VisualisablePluginNameSpace, Visualiser
 
 
 class VisualisablePlugin(ABC):

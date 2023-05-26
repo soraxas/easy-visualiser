@@ -1,14 +1,9 @@
 from typing import Optional
+
 from vispy import scene
 
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    WidgetsMixin,
-    WidgetOption,
-)
+from easy_visualiser.plugin_capability import WidgetOption, WidgetsMixin
+from easy_visualiser.plugins import VisualisablePlugin
 
 
 class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):

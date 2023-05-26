@@ -1,29 +1,24 @@
 import enum
 import math
 import os
-from typing import Dict, List
-import time
 import pathlib
+import time
+from typing import Dict, List
 
 import numpy as np
 import vispy
 from scipy.interpolate import NearestNDInterpolator
-from vispy.scene import Mesh
-from vispy.scene import transforms
 from vispy import app
+from vispy.scene import Mesh, transforms
 
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from .easy_visualiser.plugin_capability import (
-    ToggleableMixin,
+from easy_visualiser.key_mapping import Key
+from easy_visualiser.modal_control import ModalControl
+from easy_visualiser.plugin_capability import (
     GuardableMixin,
+    ToggleableMixin,
     TriggerableMixin,
 )
-
-from .easy_visualiser.modal_control import ModalControl
-from .easy_visualiser.key_mapping import Key
-from plannerGraphVisualiser.moos_comms import pMoosPlannerVisualiser
+from easy_visualiser.plugins import VisualisablePlugin
 
 PITCH_ANGLE_CHANNEL_NAME = "VEHICLE_ANGLE"
 SWARM_VEHICLES_REPORT_CHANNEL_NAME = "NODE_REPORT_LOCAL"
@@ -86,7 +81,9 @@ class VisualisableMoosSwarm(
         # cast string arg to enum
         self.swarm_model_type = SwarmModelType[swarm_model_type]
 
-        self.moos = pMoosPlannerVisualiser.get_instance()
+        from easy_visualiser.moos_comms import MoosComms
+
+        self.moos = MoosComms.get_instance()
         self.moos.register_variable(
             SWARM_VEHICLES_REPORT_CHANNEL_NAME, self.moos_vehicle_msg_cb
         )

@@ -1,4 +1,4 @@
-from typing import Tuple, Callable, Union, List, Optional
+from typing import Callable, List, Optional, Tuple, Union
 
 
 class Key:

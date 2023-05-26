@@ -1,6 +1,6 @@
-from .easy_visualiser.plugin_capability import IntervalUpdatableMixin
-from .easy_visualiser.plugins.visualisable_axis import VisualisablePrincipleAxis
-from .visualisable_bathymetry import VisualisableBathy
+from easy_visualiser.plugin_capability import IntervalUpdatableMixin
+from easy_visualiser.plugins import VisualisablePrincipleAxis
+from easy_visualiser.plugins.ext.visualisable_bathymetry import VisualisableBathy
 
 
 class VisualisablePrincipleAxisWithBathyOffset(

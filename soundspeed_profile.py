@@ -1,36 +1,33 @@
 import os
-from typing import List, Dict
+from typing import Dict, List
 
+import numpy as np
+from icecream import ic
 from tap import Tap
 from vispy import app, scene
 from vispy.plot import PlotWidget
-import numpy as np
-from icecream import ic
 
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    WidgetsMixin,
+from easy_visualiser.plugin_capability import (
     TriggerableMixin,
     WidgetOption,
+    WidgetsMixin,
 )
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
-    VisualisableStatusBar,
-)
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.plugins.visualisable_status_bar import VisualisableStatusBar
+
 from .easy_visualiser.modal_control import ModalControl
 from .easy_visualiser.modded_components import (
-    SyncedPanZoomCamera,
-    PlotWidgetWithSyncedCamera,
     LockedPanZoomCamera,
+    PlotWidgetWithSyncedCamera,
+    SyncedPanZoomCamera,
 )
 from .easy_visualiser.utils import boolean_to_onoff
 
 os.putenv("NO_AT_BRIDGE", "1")
 
-from .easy_visualiser.visualiser import Visualiser
-
 import netCDF4
+
+from .easy_visualiser.visualiser import Visualiser
 
 
 class Plottable:
@@ -244,7 +241,6 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
         self.pw.camera.set_range(x=self.bounds["x"], y=self.bounds["y"], margin=0)
 
     def get_constructed_widgets(self):
-
         if self.custom_camera is None:
             self.pw = PlotWidget(
                 fg_color="w",

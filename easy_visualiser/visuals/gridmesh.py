@@ -1,9 +1,8 @@
+import numpy as np
 from vispy.geometry import create_grid_mesh
 from vispy.scene.visuals import create_visual_node
 from vispy.visuals import MeshVisual
 from vispy.visuals.gridmesh import GridMeshVisual
-
-import numpy as np
 
 
 class FixedGridMeshVisual(GridMeshVisual):

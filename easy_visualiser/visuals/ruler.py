@@ -1,11 +1,10 @@
+import dataclasses
 from collections import namedtuple
 from typing import Callable, List
 
-import dataclasses
 import numpy as np
-
-from vispy.scene.visuals import create_visual_node, Text
-from vispy.visuals import LineVisual, CompoundVisual
+from vispy.scene.visuals import Text, create_visual_node
+from vispy.visuals import CompoundVisual, LineVisual
 
 
 @dataclasses.dataclass

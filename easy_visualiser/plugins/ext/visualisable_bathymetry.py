@@ -1,22 +1,20 @@
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import numpy as np
-from scipy.interpolate import griddata, NearestNDInterpolator
+from scipy.interpolate import NearestNDInterpolator, griddata
 from scipy.spatial import cKDTree
 from vispy.color import get_colormap
 
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-    IntervalUpdatableMixin,
-)
-from .easy_visualiser.plugin_capability import (
-    ToggleableMixin,
+from easy_visualiser.dummy import DUMMY_AXIS_VAL
+from easy_visualiser.modal_control import ModalControl
+from easy_visualiser.plugin_capability import (
     CallableAndFileModificationGuardableMixin,
+    IntervalUpdatableMixin,
+    ToggleableMixin,
 )
-from plannerGraphVisualiser.easy_visualiser.dummy import DUMMY_AXIS_VAL
-from plannerGraphVisualiser.easy_visualiser.visuals.gridmesh import FixedGridMesh
-from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
-from .easy_visualiser.utils import ToggleableBool
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.utils import ToggleableBool
+from easy_visualiser.visuals.gridmesh import FixedGridMesh
 
 
 def create_grid_mesh(

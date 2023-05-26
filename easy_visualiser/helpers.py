@@ -1,5 +1,4 @@
 import numpy as np
-
 from vispy import scene
 from vispy.scene import BaseCamera
 from vispy.scene.cameras.perspective import Base3DRotationCamera

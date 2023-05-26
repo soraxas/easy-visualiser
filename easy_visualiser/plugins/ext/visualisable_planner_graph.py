@@ -1,27 +1,20 @@
 from typing import Optional
 
 import numpy as np
+from vispy import scene
 from vispy.color import get_colormap
 
-from plannerGraphVisualiser import mean_confidence_interval
-from vispy import scene
-
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from .easy_visualiser.plugin_capability import (
-    ToggleableMixin,
-    IntervalUpdatableMixin,
+from easy_visualiser.dummy import DUMMY_COLOUR, DUMMY_CONNECT, DUMMY_LINE
+from easy_visualiser.maths import mean_confidence_interval
+from easy_visualiser.modal_control import ModalControl
+from easy_visualiser.plugin_capability import (
     CallableAndFileModificationGuardableMixin,
+    IntervalUpdatableMixin,
+    ToggleableMixin,
     WidgetsMixin,
 )
-from plannerGraphVisualiser.easy_visualiser.dummy import (
-    DUMMY_LINE,
-    DUMMY_CONNECT,
-    DUMMY_COLOUR,
-)
-from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
-from .easy_visualiser.utils import ToggleableBool, boolean_to_onoff
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.utils import ToggleableBool, boolean_to_onoff
 
 
 class SolutionLine:

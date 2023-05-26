@@ -1,21 +1,11 @@
 import numpy as np
 
-from plannerGraphVisualiser.easy_visualiser.modal_control import (
-    ModalControl,
-)
-from plannerGraphVisualiser.easy_visualiser.key_mapping import (
-    Mapping,
-    Key,
-    DummyMappingLine,
-)
-from plannerGraphVisualiser.easy_visualiser.modded_components import (
-    MarkerWithModifiablePos,
-)
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import TriggerableMixin
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from plannerGraphVisualiser.easy_visualiser.utils import ScalableFloat
+from easy_visualiser.key_mapping import DummyMappingLine, Key, Mapping
+from easy_visualiser.modal_control import ModalControl
+from easy_visualiser.modded_components import MarkerWithModifiablePos
+from easy_visualiser.plugin_capability import TriggerableMixin
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.utils import ScalableFloat
 
 
 class VisualisablePoints(TriggerableMixin, VisualisablePlugin):

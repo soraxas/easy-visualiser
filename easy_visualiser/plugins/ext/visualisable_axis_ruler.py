@@ -1,23 +1,20 @@
 from collections import namedtuple
 from typing import List
+
 import numpy as np
-
-from vispy.scene import XYZAxis
 from vispy import app
-
+from vispy.scene import XYZAxis
 from vispy.util import keys
 
-from plannerGraphVisualiser.easy_visualiser.helpers import (
-    visual_coordinate_to_pixel_coordinate,
+from easy_visualiser.helpers import (
     compute_delta_vec_from_canvas_to_visual_coordinate,
+    visual_coordinate_to_pixel_coordinate,
 )
-from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping, DummyMappingLine
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import ToggleableMixin
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from plannerGraphVisualiser.easy_visualiser.utils import boolean_to_onoff
-from plannerGraphVisualiser.easy_visualiser.visuals.ruler import RulerScale
+from easy_visualiser.key_mapping import DummyMappingLine, Mapping
+from easy_visualiser.plugin_capability import ToggleableMixin
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.utils import boolean_to_onoff
+from easy_visualiser.visuals.ruler import RulerScale
 
 RulerVisualsMapping = namedtuple("RulerVisualsMapping", "dim bound_slice")
 

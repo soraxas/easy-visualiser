@@ -1,54 +1,28 @@
-import os
-
 import glob
-import numpy as np
-from PIL import Image
-from vispy.color import get_colormap
-
-from plannerGraphVisualiser.easy_visualiser.dummy import DUMMY_AXIS_VAL
-from plannerGraphVisualiser.easy_visualiser.key_mapping import (
-    Mapping,
-    Key,
-    DummyMappingLine,
-)
-from plannerGraphVisualiser.easy_visualiser.modal_control import ModalControl
-from plannerGraphVisualiser.easy_visualiser.plugin_capability import (
-    TriggerableMixin,
-    ToggleableMixin,
-    IntervalUpdatableMixin,
-)
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_points import (
-    VisualisablePoints,
-)
-from plannerGraphVisualiser.easy_visualiser.plugins.visualisable_status_bar import (
-    VisualisableStatusBar,
-)
-from plannerGraphVisualiser.easy_visualiser.utils import (
-    ScalableFloat,
-    map_array_to_0_1,
-    IncrementableInt,
-)
-from plannerGraphVisualiser.easy_visualiser.visuals.gridmesh import FixedGridMesh
-
-from .easy_visualiser.visualiser import Visualiser
-
+import os
 import subprocess
 import sys
 
+import numpy as np
+from PIL import Image
+from tap import Tap
+from vispy.color import get_colormap
+
+from easy_visualiser.dummy import DUMMY_AXIS_VAL
+from easy_visualiser.key_mapping import DummyMappingLine, Key, Mapping
+from easy_visualiser.modal_control import ModalControl
+from easy_visualiser.plugin_capability import (
+    IntervalUpdatableMixin,
+    ToggleableMixin,
+    TriggerableMixin,
+)
+from easy_visualiser.plugins import VisualisablePlugin, VisualisablePoints
+from easy_visualiser.plugins.visualisable_status_bar import VisualisableStatusBar
+from easy_visualiser.utils import IncrementableInt, ScalableFloat, map_array_to_0_1
+from easy_visualiser.visualiser import Visualiser
+from easy_visualiser.visuals.gridmesh import FixedGridMesh
+
 os.putenv("NO_AT_BRIDGE", "1")
-
-try:
-    from tap import Tap
-except ModuleNotFoundError:
-
-    def install(package):
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-    install("typed-argument-parser")
-    from tap import Tap
 
 
 class DisplacementMapArgParser(Tap):

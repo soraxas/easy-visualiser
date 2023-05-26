@@ -1,8 +1,5 @@
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
-
-from plannerGraphVisualiser.easy_visualiser.utils import AxisScaler
+from easy_visualiser.plugins import VisualisablePlugin
+from easy_visualiser.utils import AxisScaler
 
 
 class AxisScalerPlugin(VisualisablePlugin):

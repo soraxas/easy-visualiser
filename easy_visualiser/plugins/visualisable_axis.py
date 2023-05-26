@@ -1,9 +1,7 @@
 import numpy as np
 from vispy.scene import XYZAxis
 
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePlugin,
-)
+from easy_visualiser.plugins import VisualisablePlugin
 
 axis_pos_template = np.array(
     [[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]],

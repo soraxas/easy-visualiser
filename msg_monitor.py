@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-import os
-import pymoos as moos
-import time
-import traceback
 import dataclasses
 import json
-import plotly.express as px
-from plotly.subplots import make_subplots
-
-import plotly.figure_factory as ff
+import os
+import time
+import traceback
 
 import numpy as np
+import plotly.express as px
+import plotly.figure_factory as ff
+import pymoos as moos
+from plotly.subplots import make_subplots
 
 OCEAN_CURRENT_VARIABLE = "OCEAN_CURRENT"
 DEPTH_POINTS_VARIABLE = "DEPTH_POINTS_JSON"

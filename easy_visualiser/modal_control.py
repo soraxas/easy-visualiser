@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from itertools import chain
-from typing import Callable, List, Union, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, List, Optional, Union
 
-from plannerGraphVisualiser.easy_visualiser.key_mapping import Mapping, Key
+from easy_visualiser.key_mapping import Key, Mapping
 
 if TYPE_CHECKING:
-    from plannerGraphVisualiser.easy_visualiser.visualiser import Visualiser
+    from easy_visualiser.visualiser import Visualiser
 
 
 class AbstractModalControl(ABC):

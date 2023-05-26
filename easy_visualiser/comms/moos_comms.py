@@ -3,12 +3,10 @@ from typing import Callable, Dict
 
 import pymoos as moos
 
-from plannerGraphVisualiser.easy_visualiser.plugins.abstract_visualisable_plugin import (
-    VisualisablePluginInitialisationError,
-)
+from easy_visualiser import VisualisablePluginInitialisationError
 
 
-class pMoosPlannerVisualiser(moos.comms):
+class MoosComms(moos.comms):
     def __init__(self):
         try:
             self.__class__.__instance
@@ -26,7 +24,7 @@ class pMoosPlannerVisualiser(moos.comms):
         try:
             return cls.__instance
         except AttributeError:
-            cls.__instance = pMoosPlannerVisualiser()
+            cls.__instance = cls()
         return cls.__instance
 
     def connect_to_moos(self, moos_host, moos_port):
