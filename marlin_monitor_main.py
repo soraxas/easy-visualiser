@@ -1,7 +1,3 @@
-import os
-import subprocess
-import sys
-
 from tap import Tap
 
 from easy_visualiser.plugins.ext import (

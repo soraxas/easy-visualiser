@@ -1,7 +1,7 @@
 import dataclasses
 import os
 from types import SimpleNamespace
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Callable, Iterable, List, Optional, Set, Tuple, Union
 
 from vispy import app, scene
 from vispy.scene import Grid, Widget

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import dataclasses
 import json
-import os
 import time
 import traceback
 
@@ -55,21 +54,21 @@ class pGlobalPlannerMonitor(moos.comms):
         try:
             self.register(OCEAN_CURRENT_VARIABLE, 0)
             self.register(DEPTH_POINTS_VARIABLE, 0)
-        except Exception as e:
+        except Exception:
             return False
         return True
 
     def __on_new_mail(self):
         try:
             for msg in self.fetch():
-                import pickle
+                pass
 
                 if msg.key() == OCEAN_CURRENT_VARIABLE:
                     self.currents = json.loads(msg.string())
                 elif msg.key() == DEPTH_POINTS_VARIABLE:
                     self.depths = json.loads(msg.string())
             self.plot_all()
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return False
         return True

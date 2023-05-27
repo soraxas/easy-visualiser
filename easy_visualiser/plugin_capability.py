@@ -3,7 +3,7 @@ import enum
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 
 from vispy.scene import Widget
 

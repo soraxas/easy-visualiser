@@ -1,6 +1,5 @@
 import dataclasses
-from collections import namedtuple
-from typing import Callable, List
+from typing import Callable
 
 import numpy as np
 from vispy.scene.visuals import Text, create_visual_node

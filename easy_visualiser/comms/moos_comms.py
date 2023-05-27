@@ -46,14 +46,13 @@ class MoosComms(moos.comms):
         self.register(variable_name, interval)
 
     def __on_connect(self):
-        pass
         return True
 
     def __on_new_mail(self):
         try:
             for msg in self.fetch():
                 self.__registered_variables[msg.key()](msg)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return False
         return True
