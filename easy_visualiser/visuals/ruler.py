@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Callable
+from typing import Callable, List, Optional
 
 import numpy as np
 from vispy.scene.visuals import Text, create_visual_node
@@ -75,7 +75,9 @@ class RulerScaleVisual(LineVisual):
         tick_length=None,
         major_tick_every=5,
         scale_factor=1,
-        tick_label_callback: Callable[[float, np.ndarray, np.ndarray], None] = None,
+        tick_label_callback: Optional[
+            Callable[[float, np.ndarray, np.ndarray], None]
+        ] = None,
         **kwargs,
     ):
         """
@@ -94,7 +96,7 @@ class RulerScaleVisual(LineVisual):
         self.__tick_length = tick_length
         self.__cur_vec_norm = 1
         self.__last_start_end_pos = None
-        self.ticks_info = None
+        self.ticks_info: List[TickLocation] = []
         # to scale the ruler
         self.scale_factor = scale_factor
         self.tick_label_callback = tick_label_callback
@@ -205,7 +207,7 @@ class RulerScaleVisual(LineVisual):
                 pos[2 + i * 2 + 0, :] = tick_info.tick_location
                 pos[2 + i * 2 + 1, :] = _tick_end
 
-                if tick_info.is_major:
+                if tick_info.is_major and self.tick_label_callback is not None:
                     self.tick_label_callback(
                         tick_info.length_from_origin, _tick_end, tick_vec_unit
                     )

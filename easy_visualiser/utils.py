@@ -5,7 +5,7 @@ import numpy as np
 
 class AxisScaler:
     def __init__(self, scale_factor: float) -> None:
-        self.min = 0
+        self.min: float = 0
         self.scale_factor = scale_factor
 
     def set_min(self, value: float) -> None:
@@ -122,7 +122,7 @@ def topological_sort(source: List[Tuple[U, Set[U]]]) -> Iterator[U]:
     pending = [
         (name, set(deps)) for name, deps in source
     ]  # copy deps so we can modify set in-place
-    emitted = []
+    emitted: List[U] = []
     while pending:
         next_pending = []
         next_emitted = []
