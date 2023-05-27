@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Type, U
 from vispy.scene import Widget
 
 if sys.version_info >= (3, 8):
-    from typing import Literal, TypedDict, overload  # pylint: disable=no-name-in-module
+    from typing import Literal  # pylint: disable=no-name-in-module
+    from typing import TypedDict, overload
 else:
     from typing_extensions import Literal, TypedDict, overload
 
