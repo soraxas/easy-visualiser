@@ -1,6 +1,47 @@
-from typing import Iterator, List, Set, Tuple, TypeVar, Union
+import functools
+from typing import Dict, Iterator, List, Set, Tuple, TypeVar, Union
 
 import numpy as np
+
+
+def force_async(fn):
+    """
+    turns a sync function to async function using threads
+    """
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+
+    pool = ThreadPoolExecutor()
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        future = pool.submit(fn, *args, **kwargs)
+        return asyncio.wrap_future(future)  # make it awaitable
+
+    return wrapper
+
+
+def infer_bounds(stuff: Union[np.ndarray, Tuple, List]) -> Dict:
+    if isinstance(stuff, np.ndarray):
+        _batch_axis_idx = 1
+        _dim_axis_idx = 0
+    elif isinstance(stuff, (tuple, List)):
+        _batch_axis_idx = 0
+        _dim_axis_idx = 1
+    else:
+        raise ValueError(f"Unable to infer bounds for object with type {type(stuff)}")
+
+    _data = np.array(stuff)
+    if len(_data.shape) != 2:
+        raise ValueError(f"Unable to infer bounds for object with shape {_data.shape}")
+
+    bounds = dict()
+    min = np.min(_data, axis=_dim_axis_idx)
+    max = np.max(_data, axis=_dim_axis_idx)
+
+    for dim, i in zip(("x", "y", "z"), range(_data.shape[_batch_axis_idx])):
+        bounds[dim] = [min[i], max[i]]
+    return bounds
 
 
 class AxisScaler:

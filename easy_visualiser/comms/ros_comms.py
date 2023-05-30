@@ -1,8 +1,8 @@
+import os
 from typing import Callable
 
-import os
-import rospy
 import rosgraph
+import rospy
 
 from . import Singleton
 
@@ -20,7 +20,7 @@ class RosComm(Singleton):
         super().__init__()
         # initialise in a background thread
         pool = ThreadPoolExecutor()
-        future = pool.submit(self.__init_node)
+        pool.submit(self.__init_node)
 
         self.subscribers = []
         self.subscribed_topics = []

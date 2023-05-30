@@ -3,29 +3,16 @@ from typing import Callable, Dict
 
 import pymoos as moos
 
-from easy_visualiser import VisualisablePluginInitialisationError
+from easy_visualiser.plugins import VisualisablePluginInitialisationError
+
+from . import Singleton
 
 
-class MoosComms(moos.comms):
+class MoosComm(Singleton, moos.comms):
     def __init__(self):
-        try:
-            self.__class__.__instance
-        except AttributeError:
-            pass
-        else:
-            raise RuntimeError(f"An instance of {self.__class__} already exists!")
         super().__init__()
         self.connect_to_moos("localhost", 9000)
-        self.__class__.__instance = None
         self.__registered_variables: Dict[str, Callable] = dict()
-
-    @classmethod
-    def get_instance(cls):
-        try:
-            return cls.__instance
-        except AttributeError:
-            cls.__instance = cls()
-        return cls.__instance
 
     def connect_to_moos(self, moos_host, moos_port):
         self.set_on_connect_callback(self.__on_connect)
