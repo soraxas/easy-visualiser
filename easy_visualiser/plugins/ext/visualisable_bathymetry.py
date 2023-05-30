@@ -5,7 +5,6 @@ from scipy.interpolate import NearestNDInterpolator, griddata
 from scipy.spatial import cKDTree
 from vispy.color import get_colormap
 
-from easy_visualiser.dummy import DUMMY_AXIS_VAL
 from easy_visualiser.modal_control import ModalControl
 from easy_visualiser.plugin_capability import (
     CallableAndFileModificationGuardableMixin,
@@ -14,6 +13,7 @@ from easy_visualiser.plugin_capability import (
 )
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import ToggleableBool
+from easy_visualiser.utils.dummy import DUMMY_AXIS_VAL
 from easy_visualiser.visuals.gridmesh import FixedGridMesh
 
 

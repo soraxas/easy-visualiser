@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 from vispy.color import get_colormap
 
-from easy_visualiser.key_mapping import DummyMappingLine, Key, Mapping
+from easy_visualiser.key_mapping import Key, Mapping, MappingOnlyDisplayText
 from easy_visualiser.plugin_capability import ToggleableMixin
 from easy_visualiser.plugins import VisualisablePoints
 from easy_visualiser.utils import ScalableFloat, map_array_to_0_1
@@ -29,7 +29,7 @@ class VisualisableDisplacementMap(ToggleableMixin, VisualisablePoints):
 
         __scale_factor = 1.25
         self.keys[:0] = [
-            DummyMappingLine(lambda: f"dis scale: {float(self._z_scale):.2f}"),
+            MappingOnlyDisplayText(lambda: f"dis scale: {float(self._z_scale):.2f}"),
             Mapping(
                 Key.Plus,
                 "Increase points typology scale",

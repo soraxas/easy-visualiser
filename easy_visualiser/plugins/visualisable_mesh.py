@@ -2,12 +2,12 @@ import numpy as np
 from PIL import Image
 from vispy.color import get_colormap
 
-from easy_visualiser.dummy import DUMMY_AXIS_VAL
-from easy_visualiser.key_mapping import DummyMappingLine, Key, Mapping
+from easy_visualiser.key_mapping import Key, Mapping, MappingOnlyDisplayText
 from easy_visualiser.modal_control import ModalControl
 from easy_visualiser.plugin_capability import ToggleableMixin, TriggerableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import IncrementableInt, ScalableFloat, map_array_to_0_1
+from easy_visualiser.utils.dummy import DUMMY_AXIS_VAL
 from easy_visualiser.visuals.gridmesh import FixedGridMesh
 
 
@@ -38,7 +38,7 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
         self.grid_every = IncrementableInt(1, lower_bound=1)
 
         self.keys[:0] = [
-            DummyMappingLine(lambda: f"scale: {float(self._z_scale):.2f}"),
+            MappingOnlyDisplayText(lambda: f"scale: {float(self._z_scale):.2f}"),
             Mapping(
                 Key.Plus,
                 "Increase mesh typology scale",
@@ -53,7 +53,7 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
             ModalControl(
                 "g",
                 [
-                    DummyMappingLine(
+                    MappingOnlyDisplayText(
                         lambda: f"grid indexing every: {int(self.grid_every)}"
                     ),
                     Mapping(

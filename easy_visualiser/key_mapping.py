@@ -58,6 +58,6 @@ class Mapping:
         return f"{self.__class__.__name__}<{self.key}|'{self.description}|{self.callback}'>"
 
 
-class DummyMappingLine(Mapping):
+class MappingOnlyDisplayText(Mapping):
     def __init__(self, description: Union[str, Callable]):
         super().__init__("", description, lambda: None)

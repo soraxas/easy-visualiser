@@ -10,7 +10,7 @@ from easy_visualiser.helpers import (
     compute_delta_vec_from_canvas_to_visual_coordinate,
     visual_coordinate_to_pixel_coordinate,
 )
-from easy_visualiser.key_mapping import DummyMappingLine, Mapping
+from easy_visualiser.key_mapping import Mapping, MappingOnlyDisplayText
 from easy_visualiser.plugin_capability import ToggleableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import boolean_to_onoff
@@ -55,7 +55,9 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
                 lambda: f"toggle measurer [{boolean_to_onoff(self.state.is_on())}] origin[{self.target_origin_visual}]",
                 self.toggle,
             ),
-            DummyMappingLine("    Note: Hold <Alt> key to drag the measurer origin"),
+            MappingOnlyDisplayText(
+                "    Note: Hold <Alt> key to drag the measurer origin"
+            ),
         ]
 
     def turn_on_plugin(self):

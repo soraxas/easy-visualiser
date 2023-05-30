@@ -1,6 +1,6 @@
 import numpy as np
 
-from easy_visualiser.key_mapping import DummyMappingLine, Key, Mapping
+from easy_visualiser.key_mapping import Key, Mapping, MappingOnlyDisplayText
 from easy_visualiser.modal_control import ModalControl
 from easy_visualiser.modded_components import MarkerWithModifiablePos
 from easy_visualiser.plugin_capability import TriggerableMixin
@@ -24,7 +24,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
             ModalControl(
                 "m",
                 [
-                    DummyMappingLine(
+                    MappingOnlyDisplayText(
                         lambda: f"marker size: {float(self._marker_scale):.2f}"
                     ),
                     Mapping(
@@ -49,7 +49,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
             ModalControl(
                 "a",
                 [
-                    DummyMappingLine(
+                    MappingOnlyDisplayText(
                         lambda: f"antialias: {float(self._antialias):.4f}"
                     ),
                     Mapping(

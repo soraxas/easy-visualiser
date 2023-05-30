@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from vispy.color import get_colormap
 
-from easy_visualiser.key_mapping import DummyMappingLine
+from easy_visualiser.key_mapping import MappingOnlyDisplayText
 from easy_visualiser.plugin_capability import IntervalUpdatableMixin
 from easy_visualiser.plugins.visualisable_displacementmap import (
     VisualisableDisplacementMap,
@@ -35,7 +35,7 @@ class VisualisableDisplacementMapLoopWithGlob(
 
         # line to display current image
         self.keys[:0] = [
-            DummyMappingLine(
+            MappingOnlyDisplayText(
                 lambda: f"Displaying: {self.current_image_path.split('/')[-1]}\n"
             ),
         ]
