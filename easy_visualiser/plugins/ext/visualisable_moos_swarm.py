@@ -13,10 +13,7 @@ from vispy.scene import Mesh, transforms
 
 from easy_visualiser.key_mapping import Key
 from easy_visualiser.modal_control import ModalControl
-from easy_visualiser.plugin_capability import (
-    GuardableMixin,
-    TriggerableMixin,
-)
+from easy_visualiser.plugin_capability import GuardableMixin, TriggerableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 
 PITCH_ANGLE_CHANNEL_NAME = "VEHICLE_ANGLE"
@@ -80,9 +77,9 @@ class VisualisableMoosSwarm(
         # cast string arg to enum
         self.swarm_model_type = SwarmModelType[swarm_model_type]
 
-        from easy_visualiser.input.moos import MoosComms
+        from easy_visualiser.input.moos import MoosComm
 
-        self.moos = MoosComms.get_instance()
+        self.moos = MoosComm.get_instance()
         self.moos.register_variable(
             SWARM_VEHICLES_REPORT_CHANNEL_NAME, self.moos_vehicle_msg_cb
         )
