@@ -15,7 +15,6 @@ from easy_visualiser.key_mapping import Key
 from easy_visualiser.modal_control import ModalControl
 from easy_visualiser.plugin_capability import (
     GuardableMixin,
-    ToggleableMixin,
     TriggerableMixin,
 )
 from easy_visualiser.plugins import VisualisablePlugin
@@ -81,7 +80,7 @@ class VisualisableMoosSwarm(
         # cast string arg to enum
         self.swarm_model_type = SwarmModelType[swarm_model_type]
 
-        from easy_visualiser.moos_comms import MoosComms
+        from easy_visualiser.input.moos import MoosComms
 
         self.moos = MoosComms.get_instance()
         self.moos.register_variable(

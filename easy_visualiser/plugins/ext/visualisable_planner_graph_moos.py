@@ -9,7 +9,7 @@ from easy_visualiser.plugins.ext.visualisable_planner_graph import SolutionLine
 PLAN_VARIABLE = "GLOBAL_PLAN"
 
 if TYPE_CHECKING:
-    from easy_visualiser.comms.moos_comms import MoosComm
+    from easy_visualiser.input.moos import MoosComm
 
 
 class VisualisablePlannerGraphWithMossMsg(
@@ -21,7 +21,7 @@ class VisualisablePlannerGraphWithMossMsg(
     def construct_plugin(self) -> bool:
         super().construct_plugin()
 
-        from easy_visualiser.comms.moos_comms import MoosComm
+        from easy_visualiser.input.moos import MoosComm
 
         self.moos = MoosComm.get_instance()
         self.moos.register_variable(PLAN_VARIABLE, self.__plan_msg_cb)
