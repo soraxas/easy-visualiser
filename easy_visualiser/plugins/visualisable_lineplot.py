@@ -5,19 +5,25 @@ from vispy import scene
 from vispy.plot import PlotWidget
 
 from easy_visualiser.modded_components import PlotWidgetWithSyncedCamera
-from easy_visualiser.plugin_capability import WidgetOption, WidgetsMixin
+from easy_visualiser.plugin_capability import (
+    WidgetOption,
+    WidgetsMixin,
+    TriggerableMixin,
+)
+from easy_visualiser.modal_control import ModalControl, Key, Mapping
+from easy_visualiser.plugin_capability import GuardableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import infer_bounds
 
 
-class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
+class VisualisableLinePlot(WidgetsMixin, TriggerableMixin, VisualisablePlugin):
     pw: PlotWidget
 
     def __init__(
         self,
         bounds: Optional[Dict] = None,
         widget_option: WidgetOption = None,
-        name: str = "my_plot",
+        name: str = None,
         custom_camera=None,
         lineplot_kwargs=None,
     ):
@@ -25,6 +31,13 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
         if lineplot_kwargs is None:
             lineplot_kwargs = dict(width=2, marker_size=5, title=self.name)
         self.lineplot_kwargs = lineplot_kwargs
+        self.keys = [
+            Mapping(
+                Key(["z", "r"]),
+                "auto range",
+                lambda: self.auto_bounds(),
+            )
+        ]
 
         self.bounds = bounds
         if widget_option is None:
@@ -32,6 +45,18 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
         self.widget_option = widget_option
         self.plots: List[scene.LinePlot] = []
         self.custom_camera = custom_camera
+
+    def auto_bounds(self):
+        if len(self.plots) < 1:
+            return
+        D = 2
+        bounds = [[float("inf"), float("-inf")] for _ in range(D)]
+        for p in self.plots:
+            for i in range(D):
+                b = p._markers._compute_bounds(i, None)
+                bounds[i][0] = min(bounds[i][0], b[0])
+                bounds[i][1] = max(bounds[i][1], b[1])
+        self.enforce_bounds(bounds=dict(x=bounds[0], y=bounds[i]))
 
     def get_plot(self, idx) -> scene.LinePlot:
         while idx >= len(self.plots):
@@ -42,7 +67,7 @@ class VisualisableLinePlot(WidgetsMixin, VisualisablePlugin):
         self,
         data: Union[np.ndarray, Tuple[List, List]],
         idx: int = 0,
-        auto_range: bool = False,
+        auto_range: bool = True,
         **kwargs
     ):
         self.get_plot(idx=idx).set_data(data=data, **kwargs)

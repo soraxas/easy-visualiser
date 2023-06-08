@@ -1,5 +1,7 @@
 import dataclasses
 import os
+import time
+import threading
 from types import SimpleNamespace
 from typing import Callable, Iterable, List, Optional, Set, Tuple, Union
 
@@ -76,6 +78,9 @@ class Visualiser:
         # # col num just to make it on the right size (0 is left)
         # self.grid.add_widget(col=10)
 
+        # create an event used to stop running tasks
+        self.threads = []
+        self.thread_exit_event = threading.Event()
         self._registered_plugins_mappings: Optional[VisualisablePluginNameSpace] = None
         self.initialised = False
 
@@ -212,6 +217,17 @@ class Visualiser:
         """An easy way to reference the parent of all visual elements."""
         return self.view.scene
 
+    def run_in_background_thread(self, func: Callable, run_every: float):
+        self.threads.append(
+            threading.Thread(target=self.__thread_runner, args=(func, run_every))
+        )
+        self.threads[-1].start()
+
+    def __thread_runner(self, func: Callable, run_every: float):
+        while not self.thread_exit_event.is_set():
+            func()
+            time.sleep(run_every)
+
     def run(self, regular_update_interval: Optional[float] = None):
         """
         The main function to start the visualisation window after everything had been
@@ -225,3 +241,6 @@ class Visualiser:
             )
         self.interval_update()  # initial update
         app.run()
+        self.thread_exit_event.set()
+        for t in self.threads:
+            t.join()

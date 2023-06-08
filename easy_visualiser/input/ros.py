@@ -42,7 +42,7 @@ class RosComm(Singleton):
                 self.__init_node()
                 # re-subscribe
                 for _subscribe_datapack in self.subscribed_topics:
-                    self._subscribe(_subscribe_datapack)
+                    self.__subscribe(_subscribe_datapack)
                 break
             r.sleep()
 
@@ -53,11 +53,12 @@ class RosComm(Singleton):
         self.initialised = True
         my_print("Connected to ROS master")
 
-    def _subscribe(self, datapack):
+    def __subscribe(self, datapack):
+        # this is the actual subscribe function, without storing things in it
         topic, msg_type, callback = datapack
         self.subscribers.append(rospy.Subscriber(topic, msg_type, callback))
 
     def subscribe(self, topic: str, msg_type, callback: Callable):
         datapack = (topic, msg_type, callback)
         self.subscribed_topics.append(datapack)
-        self._subscribe(datapack)
+        self.__subscribe(datapack)
