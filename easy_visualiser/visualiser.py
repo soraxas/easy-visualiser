@@ -1,22 +1,26 @@
 import dataclasses
 import os
-import time
 import threading
+import time
 from types import SimpleNamespace
 from typing import Callable, Iterable, List, Optional, Set, Tuple, Union
 
 from vispy import app, scene
 from vispy.scene import Grid, Widget
 
-from .key_mapping import Mapping
-from .modal_control import ModalControl, ModalState
+from .modal_control import ModalState
 from .plugin_capability import (
     PluginState,
     ToggleableMixin,
     TriggerableMixin,
     WidgetsMixin,
 )
-from .plugins import VisualisablePlugin, VisualisablePluginInitialisationError
+from .plugins import (
+    VisualisablePlugin,
+    VisualisablePluginInitialisationError,
+    VisualisablePrincipleAxis,
+)
+from .plugins.visualisable_gridlines import VisualisableGridLines
 from .utils import topological_sort
 
 os.putenv("NO_AT_BRIDGE", "1")
@@ -64,12 +68,16 @@ class Visualiser:
         self,
         title="untitled",
         grid_margin: float = 0,
+        bgcolor: str = "grey",
+        auto_add_default_plugins: bool = True,
     ):
         # Display the data
         self.canvas = scene.SceneCanvas(title=title, keys="interactive", show=True)
         self.view = self.canvas.central_widget.add_view()
         self.view.camera = "turntable"
         self.view.camera.aspect = 1
+        self.view.bgcolor = bgcolor
+        self.auto_add_default_plugins = auto_add_default_plugins
 
         self.current_modal = ModalState(visualiser=self)
         self.hooks = VisualiserHooks([], [])
@@ -88,6 +96,8 @@ class Visualiser:
         """
         The initialisation function that initialise each registered plugin
         """
+        self._add_default_plugins()
+
         self._registered_plugins_mappings = VisualisablePluginNameSpace(
             **{p.name: p for p, _ in self._registered_plugins}
         )
@@ -228,11 +238,21 @@ class Visualiser:
             func()
             time.sleep(run_every)
 
+    def _add_default_plugins(self):
+        if not self.auto_add_default_plugins:
+            return
+        for default_plugin_cls in [VisualisablePrincipleAxis, VisualisableGridLines]:
+            if not any(
+                isinstance(p, default_plugin_cls) for p, _ in self._registered_plugins
+            ):
+                self.register_plugin(default_plugin_cls())
+
     def run(self, regular_update_interval: Optional[float] = None):
         """
         The main function to start the visualisation window after everything had been
         set up.
         """
+        self.registered_plugins_mappings.grid_lines.a = 1
         if regular_update_interval:
             timer = app.Timer(
                 interval=regular_update_interval,
