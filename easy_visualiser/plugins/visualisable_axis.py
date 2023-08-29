@@ -28,10 +28,6 @@ class VisualisablePrincipleAxis(VisualisablePlugin):
         if update_display:
             self.axis_visual.set_data(pos=self._axis_pos)
 
-    @property
-    def name(self):
-        return "principle_axis"
-
     def construct_plugin(self) -> None:
         super().construct_plugin()
 

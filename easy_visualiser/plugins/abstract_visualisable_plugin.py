@@ -1,6 +1,8 @@
 from abc import ABC
 from typing import TYPE_CHECKING, Optional, Type
 
+import overrides
+
 from easy_visualiser.plugin_capability import (
     GuardableMixin,
     IntervalUpdatableMixin,
@@ -17,6 +19,7 @@ class VisualisablePlugin(ABC):
     __had_set_range: bool = False
 
     def __init__(self, name: Optional[str] = None):
+        super().__init__()
         self.state = PluginState.EMPTY
 
         if not hasattr(self, "name"):
@@ -35,6 +38,7 @@ class VisualisablePlugin(ABC):
     def other_plugins(self) -> "VisualisablePluginNameSpace":
         return self.visualiser.registered_plugins_mappings
 
+    @overrides.final
     def update(self, force=False) -> None:
         """no overriding!"""
         if not isinstance(self, IntervalUpdatableMixin):

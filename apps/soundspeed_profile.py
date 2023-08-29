@@ -9,8 +9,8 @@ from easy_visualiser.key_mapping import Mapping
 from easy_visualiser.modded_components import LockedPanZoomCamera, SyncedPanZoomCamera
 from easy_visualiser.plugin_capability import TriggerableMixin, WidgetOption
 from easy_visualiser.plugins import (
+    Visualisable2DLinePlot,
     VisualisableImage,
-    VisualisableLinePlot,
     VisualisableStatusBar,
     VisualisableVolumePlot,
 )
@@ -29,7 +29,7 @@ def _filter_out(x, y):
 class VisualisableImageSynced(VisualisableImage, TriggerableMixin):
     def __init__(self, image_array: np.array):
         super().__init__(image_array, widget_configs=dict(col=0, row=0, col_span=2))
-        self.keys = [
+        self.add_mappings(
             Mapping(
                 "a",
                 lambda: f"toggle auto-update [{boolean_to_onoff(self.auto_update)}]",
@@ -40,7 +40,7 @@ class VisualisableImageSynced(VisualisableImage, TriggerableMixin):
                 lambda: f"toggle auto-resize [{boolean_to_onoff(self.auto_resize)}]",
                 self.__toggle_auto_resize,
             ),
-        ]
+        )
         self.auto_update = True
         self.auto_resize = True
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         )
     )
     visualiser.register_plugin(
-        VisualisableLinePlot(
+        Visualisable2DLinePlot(
             bounds=dict(
                 x=[np.nanmin(sound_speed), np.nanmax(sound_speed)],
                 y=zc_bounds,
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         )
     )
     visualiser.register_plugin(
-        VisualisableLinePlot(
+        Visualisable2DLinePlot(
             bounds=dict(
                 x=[np.nanmin(sound_speed), np.nanmax(sound_speed)],
                 y=zc_bounds,
@@ -223,7 +223,7 @@ if __name__ == "__main__":
         )
     )
     visualiser.register_plugin(
-        VisualisableLinePlot(
+        Visualisable2DLinePlot(
             bounds=dict(
                 x=[np.nanmin(sound_speed), np.nanmax(sound_speed)],
                 y=zc_bounds,

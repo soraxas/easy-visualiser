@@ -28,7 +28,7 @@ class VisualisableDisplacementMap(ToggleableMixin, VisualisablePoints):
         super(VisualisableDisplacementMap, self).__init__(point_data)
 
         __scale_factor = 1.25
-        self.keys[:0] = [
+        self.add_mappings(
             MappingOnlyDisplayText(lambda: f"dis scale: {float(self._z_scale):.2f}"),
             Mapping(
                 Key.Plus,
@@ -42,7 +42,8 @@ class VisualisableDisplacementMap(ToggleableMixin, VisualisablePoints):
                 lambda: self._z_scale.scale(1 / __scale_factor)
                 and self._reload_pos_data(self._compute_new_point_data()),
             ),
-        ]
+            front=True,
+        )
 
     def _compute_new_point_data(self):
         self.point_data[:, 2] = self.z_data * float(self._z_scale)

@@ -11,6 +11,9 @@ from easy_visualiser.plugins.visualisable_displacementmap_glob import (
 )
 from easy_visualiser.plugins.visualisable_mesh import VisualisableMesh
 from easy_visualiser.plugins.visualisable_status_bar import VisualisableStatusBar
+from easy_visualiser.utils.triggerable_utils import (
+    move_triggerable_plugin_keys_to_nested_modal_control,
+)
 from easy_visualiser.visualiser import Visualiser
 
 os.putenv("NO_AT_BRIDGE", "1")
@@ -35,10 +38,24 @@ def run():
     )
     visualiser.register_plugin(VisualisableStatusBar())
     if args.glob:
-        displacement_plugin_cls = VisualisableDisplacementMapLoopWithGlob
+        displacement_plugin = VisualisableDisplacementMapLoopWithGlob(args.image_path)
+        visualiser.register_plugin(displacement_plugin)
+
     else:
-        displacement_plugin_cls = VisualisableDisplacementMap
-        visualiser.register_plugin(VisualisableMesh(args.image_path))
+        visualiser.register_plugin(
+            move_triggerable_plugin_keys_to_nested_modal_control(
+                VisualisableDisplacementMap(args.image_path),
+                key="d",
+                modal_name="displacement map",
+            )
+        )
+        visualiser.register_plugin(
+            move_triggerable_plugin_keys_to_nested_modal_control(
+                VisualisableMesh(args.image_path),
+                key="m",
+                modal_name="mesh",
+            )
+        )
 
         def construct_cb(_plugin):
             # sync the scale
@@ -61,7 +78,6 @@ def run():
             depends_on={"VisualisableMesh", "VisualisableDisplacementMap"},
         )
 
-    visualiser.register_plugin(displacement_plugin_cls(args.image_path))
     visualiser.initialise()
 
     visualiser.run(regular_update_interval=1)

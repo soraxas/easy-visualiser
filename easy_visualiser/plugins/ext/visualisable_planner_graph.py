@@ -77,7 +77,7 @@ class VisualisablePlannerGraph(
 
         self.cost_index: Optional[int] = None
 
-        self.keys = [
+        self.add_mappings(
             ModalControl(
                 "p",
                 [
@@ -99,7 +99,7 @@ class VisualisablePlannerGraph(
                 ],
                 modal_name="global planner graph",
             )
-        ]
+        )
 
     def __toggle_graph_cb(self):
         self.graph_toggle.toggle()

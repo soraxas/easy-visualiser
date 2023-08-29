@@ -3,20 +3,21 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 from vispy import scene
 from vispy.plot import PlotWidget
+from vispy.visuals import TextVisual
 
+from easy_visualiser.modal_control import Key, Mapping, ModalControl
 from easy_visualiser.modded_components import PlotWidgetWithSyncedCamera
 from easy_visualiser.plugin_capability import (
+    GuardableMixin,
+    TriggerableMixin,
     WidgetOption,
     WidgetsMixin,
-    TriggerableMixin,
 )
-from easy_visualiser.modal_control import ModalControl, Key, Mapping
-from easy_visualiser.plugin_capability import GuardableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import infer_bounds
 
 
-class VisualisableLinePlot(WidgetsMixin, TriggerableMixin, VisualisablePlugin):
+class Visualisable2DLinePlot(WidgetsMixin, TriggerableMixin, VisualisablePlugin):
     pw: PlotWidget
 
     def __init__(
@@ -31,13 +32,13 @@ class VisualisableLinePlot(WidgetsMixin, TriggerableMixin, VisualisablePlugin):
         if lineplot_kwargs is None:
             lineplot_kwargs = dict(width=2, marker_size=5, title=self.name)
         self.lineplot_kwargs = lineplot_kwargs
-        self.keys = [
+        self.add_mapping(
             Mapping(
                 Key(["z", "r"]),
                 "auto range",
                 lambda: self.auto_bounds(),
             )
-        ]
+        )
 
         self.bounds = bounds
         if widget_option is None:
@@ -94,3 +95,7 @@ class VisualisableLinePlot(WidgetsMixin, TriggerableMixin, VisualisablePlugin):
                 fg_color="w",
             )
         return [(self.pw, self.widget_option)]
+
+    @property
+    def title(self) -> TextVisual:
+        return self.pw.title._text_visual

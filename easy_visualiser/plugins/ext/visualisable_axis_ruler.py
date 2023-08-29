@@ -49,7 +49,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
             RulerVisualsMapping(2, np.s_[0, 2]),
             RulerVisualsMapping(2, np.s_[1, 2]),
         ]
-        self.keys = [
+        self.add_mappings(
             Mapping(
                 "m",
                 lambda: f"toggle measurer [{boolean_to_onoff(self.state.is_on())}] origin[{self.target_origin_visual}]",
@@ -58,7 +58,7 @@ class VisualisableAxisRuler(ToggleableMixin, VisualisablePlugin):
             MappingOnlyDisplayText(
                 "    Note: Hold <Alt> key to drag the measurer origin"
             ),
-        ]
+        )
 
     def turn_on_plugin(self):
         if not super().turn_on_plugin():

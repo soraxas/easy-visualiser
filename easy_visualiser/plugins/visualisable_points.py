@@ -20,7 +20,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
         self._marker_scale = ScalableFloat(1, upper_bound=50)
         self._antialias = ScalableFloat(0.25, upper_bound=10)
 
-        self.keys = [
+        self.add_mappings(
             ModalControl(
                 "m",
                 [
@@ -68,7 +68,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
                 "Anti-alias",
             ),
             Mapping("z", "reset zoom", lambda: self.set_range()),
-        ]
+        )
         self.point_data = points
 
     def set_antialias(self, value):

@@ -48,7 +48,7 @@ class VisualisableOceanCurrent(
         self.ocean_current_toggle = ocean_current_toggle
         self.ocean_current_datapath = ocean_current_datapath
         self.colormap = colormap
-        self.keys = [
+        self.add_mapping(
             ModalControl(
                 "o",
                 [
@@ -71,7 +71,7 @@ class VisualisableOceanCurrent(
                 ],
                 modal_name="ocean current",
             )
-        ]
+        )
         self.guarding_callable = lambda: self.ocean_current_toggle
         self.ocean_current_max_scale = 60000
         self.ocean_current_scale = self.ocean_current_max_scale
