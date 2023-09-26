@@ -3,7 +3,7 @@ import os
 import threading
 import time
 from types import SimpleNamespace
-from typing import Callable, Iterable, List, Optional, Set, Tuple, Union, Coroutine
+from typing import Callable, Coroutine, Iterable, List, Optional, Set, Tuple, Union
 
 from vispy import app, scene
 from vispy.scene import Grid, Widget
@@ -17,10 +17,10 @@ from .plugin_capability import (
     WidgetsMixin,
 )
 from .plugins import (
+    VisualisableGridLines,
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
     VisualisablePrincipleAxis,
-    VisualisableGridLines,
 )
 from .utils import topological_sort
 
@@ -28,11 +28,10 @@ os.putenv("NO_AT_BRIDGE", "1")
 
 import asyncio
 
-import inspect
-
 
 async def maybe_await(callback: Callable):
-    result = callback
+    # result = callback
+    pass
 
 
 @dataclasses.dataclass
