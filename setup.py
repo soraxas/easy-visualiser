@@ -29,6 +29,7 @@ setuptools.setup(
         "vispy",
         "pyqt6",
         "typed-argument-parser",
+        "msgx",
     ],
     python_requires=">=3.7",
 )
