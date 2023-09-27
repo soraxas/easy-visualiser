@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class VisualisablePlugin(ABC):
-    visualiser: "Visualiser"
+    visualiser: "Visualiser" = None
     name: str
     __had_set_range: bool = False
 

@@ -31,3 +31,4 @@ DUMMY_ARROW = np.array(
 DUMMY_AXIS_VAL = np.array([[0]])
 DUMMY_CONNECT = np.array([[0, 1]])
 DUMMY_COLOUR = np.array([[0, 0, 0], [0, 0, 0]])
+DUMMY_POINTS = np.zeros([1, 3])

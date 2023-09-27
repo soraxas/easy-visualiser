@@ -124,19 +124,25 @@ class MarkerWithModifiablePos(visuals.Markers):
     def had_set_data(self) -> bool:
         return self._had_set_data
 
-    def update_data_pos(self, pos_data: np.ndarray):
-        self.__update_guard()
-        self._data["a_position"][:, : pos_data.shape[1]] = pos_data
-        self.__update()
+    def num_points(self):
+        if self._data is None:
+            return 0
+        return self._data["a_position"].shape[0]
 
-    def update_data_color(self, color_data: np.ndarray):
+    def update_data(
+        self,
+        *,
+        pos: np.ndarray = None,
+        colors: np.ndarray = None,
+        size: float = None,
+    ):
         self.__update_guard()
-        self._data["a_bg_color"][:] = color_data
-        self.__update()
-
-    def update_data_size(self, size: float):
-        self.__update_guard()
-        self._data["a_size"] = size
+        if pos is not None:
+            self._data["a_position"][:, : pos.shape[1]] = pos
+        if colors is not None:
+            self._data["a_bg_color"][:] = colors
+        if size is not None:
+            self._data["a_size"] = size
         self.__update()
 
     def __update_guard(self):

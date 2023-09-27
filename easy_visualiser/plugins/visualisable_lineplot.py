@@ -4,14 +4,14 @@ import numpy as np
 from vispy import scene
 from vispy.plot import PlotWidget
 
+from easy_visualiser.modal_control import Key, Mapping, ModalControl
 from easy_visualiser.modded_components import PlotWidgetWithSyncedCamera
 from easy_visualiser.plugin_capability import (
+    GuardableMixin,
+    TriggerableMixin,
     WidgetOption,
     WidgetsMixin,
-    TriggerableMixin,
 )
-from easy_visualiser.modal_control import ModalControl, Key, Mapping
-from easy_visualiser.plugin_capability import GuardableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import infer_bounds
 

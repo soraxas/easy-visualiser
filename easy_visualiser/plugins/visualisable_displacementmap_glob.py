@@ -53,7 +53,7 @@ class VisualisableDisplacementMapLoopWithGlob(
         colours = cmap.map(map_array_to_0_1(self.z_data))
         self.points_visual.set_data(face_color="white")
         self._reload_pos_data(self._compute_new_point_data())
-        self.points_visual.update_data_color(colours)
+        self.points_visual.update_data(colors=colours)
 
         # update status
         self.other_plugins.VisualisableStatusBar.update_status()

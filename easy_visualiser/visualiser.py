@@ -19,6 +19,7 @@ from .plugins import (
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
     VisualisablePrincipleAxis,
+    VisualisableStatusBar,
 )
 from .plugins.visualisable_gridlines import VisualisableGridLines
 from .utils import topological_sort
@@ -52,8 +53,18 @@ class VisualisablePluginNameSpace(SimpleNamespace):
     def __contains__(self, item: VisualisablePlugin) -> bool:
         return item in self.__dict__
 
+    def __iter__(self):
+        """Loop through stored plugins"""
+        yield from self.__dict__.values()
 
-class Visualiser:
+    def _add_mapping(self, plugin: VisualisablePlugin):
+        self.__dict__[plugin.name] = plugin
+
+
+from .ufunc import PlottingUFuncMixin
+
+
+class Visualiser(PlottingUFuncMixin):
     """
     The core visualiser that can be created to represent an instance of a window
     """
@@ -66,11 +77,13 @@ class Visualiser:
 
     def __init__(
         self,
-        title="untitled",
+        title: str = "untitled",
         grid_margin: float = 0,
         bgcolor: str = "grey",
         auto_add_default_plugins: bool = True,
     ):
+        self.app: app.Application = app.Application()
+
         # Display the data
         self.canvas = scene.SceneCanvas(title=title, keys="interactive", show=True)
         self.view = self.canvas.central_widget.add_view()
@@ -90,40 +103,21 @@ class Visualiser:
         self.threads = []
         self.thread_exit_event = threading.Event()
         self._registered_plugins_mappings: Optional[VisualisablePluginNameSpace] = None
-        self.initialised = False
+        # self.initialised = False
 
-    def initialise(self):
-        """
-        The initialisation function that initialise each registered plugin
-        """
-        self._add_default_plugins()
+    def _initialise_new_plugins(self):
+        assert self.initialised
 
-        self._registered_plugins_mappings = VisualisablePluginNameSpace(
-            **{p.name: p for p, _ in self._registered_plugins}
-        )
-        ###########################################################
-        # check plugin dependencies
-        for plugin, deps in self._registered_plugins:
-            for dep in deps:
-                if dep not in self.registered_plugins_mappings:
-                    raise ValueError(
-                        f"The dependency '{dep}' for plugin '{plugin.name}' "
-                        f"has not been registered!"
-                    )
-        # sort plugins based on dependencies
-        _plugins_dependency_list = [
-            (
-                plugin_data[0],
-                set(self.registered_plugins_mappings[dep] for dep in plugin_data[1]),
-            )
-            for plugin_data in self._registered_plugins
+        _uninitialised_plugins = [
+            plugin
+            for plugin, _ in self._registered_plugins
+            if plugin.visualiser is None
         ]
-
-        self.plugins = list(topological_sort(_plugins_dependency_list))
 
         ###########################################################
         # on initialisation hooks
-        for plugin in self.plugins:
+        for plugin in _uninitialised_plugins:
+            self.registered_plugins_mappings._add_mapping(plugin)
             try:
                 plugin.on_initialisation(visualiser=self)
             except VisualisablePluginInitialisationError as e:
@@ -131,7 +125,7 @@ class Visualiser:
 
         ###########################################################
         # build plugin
-        for plugin in self.plugins:
+        for plugin in _uninitialised_plugins:
             try:
                 ###########################################################
                 # build widget
@@ -165,6 +159,37 @@ class Visualiser:
         for hook in self.hooks.on_initialisation_finish:
             hook()
 
+    def initialise(self):
+        """
+        The initialisation function that initialise each registered plugin
+        """
+        self._add_default_plugins()
+
+        self._registered_plugins_mappings = VisualisablePluginNameSpace(
+            **{p.name: p for p, _ in self._registered_plugins}
+        )
+        ###########################################################
+        # check plugin dependencies
+        for plugin, deps in self._registered_plugins:
+            for dep in deps:
+                if dep not in self.registered_plugins_mappings:
+                    raise ValueError(
+                        f"The dependency '{dep}' for plugin '{plugin.name}' "
+                        f"has not been registered!"
+                    )
+        # sort plugins based on dependencies
+        _plugins_dependency_list = [
+            (
+                plugin_data[0],
+                set(self.registered_plugins_mappings[dep] for dep in plugin_data[1]),
+            )
+            for plugin_data in self._registered_plugins
+        ]
+
+        # sorted_plugins = list(topological_sort(_plugins_dependency_list))
+
+        self._initialise_new_plugins()
+
         @self.canvas.connect
         def on_key_press(ev):
             def process():
@@ -193,34 +218,62 @@ class Visualiser:
             return result
 
     def register_plugin(
-        self, plugin: VisualisablePlugin, depends_on: Iterable[str] = None
+        self,
+        plugin: VisualisablePlugin,
+        depends_on: Iterable[str] = None,
+        *,
+        name: str = None,
     ):
         """
         Register a plugin, with an optional dependency list of plugin name.
         The other plugins that this plugin depends on will be initialised first.
         """
+        if name:
+            plugin.name = name
         if depends_on is None:
             depends_on = []
         depends_on = set(depends_on)
         self._registered_plugins.append((plugin, depends_on))
+        if self.initialised:
+            if depends_on:
+                raise RuntimeError(
+                    "There are dependencies given, but visualiser had already been initialised!"
+                )
+            self._initialise_new_plugins()
 
     def interval_update(self):
         for plugin in self.plugins:
             if plugin.state is PluginState.ON:
                 plugin.update()
-        self.initialised = True
+        # self.initialised = True
+
+    @property
+    def initialised(self):
+        return self._registered_plugins_mappings is not None
 
     @property
     def triggerable_plugins(
         self,
     ) -> Iterable[Union[VisualisablePlugin, TriggerableMixin]]:
-        yield from (p for p in self.plugins if isinstance(p, TriggerableMixin))
+        yield from (p for p in self.active_plugins if isinstance(p, TriggerableMixin))
+
+    @property
+    def plugins(self) -> VisualisablePluginNameSpace:
+        if not self.initialised:
+            self.initialise()
+            # raise RuntimeError("Visualiser has not been initialised yet!")
+        return self._registered_plugins_mappings
+
+    @property
+    def active_plugins(self) -> Iterable[VisualisablePlugin]:
+        for p in self.plugins:
+            if isinstance(p, ToggleableMixin) and p.state is PluginState.OFF:
+                continue
+            yield p
 
     @property
     def registered_plugins_mappings(self) -> VisualisablePluginNameSpace:
-        if self._registered_plugins_mappings is None:
-            raise RuntimeError("Visualiser has not been initialised yet!")
-        return self._registered_plugins_mappings
+        return self.plugins
 
     @property
     def visual_parent(self):
@@ -241,7 +294,11 @@ class Visualiser:
     def _add_default_plugins(self):
         if not self.auto_add_default_plugins:
             return
-        for default_plugin_cls in [VisualisablePrincipleAxis, VisualisableGridLines]:
+        for default_plugin_cls in [
+            VisualisablePrincipleAxis,
+            #    VisualisableGridLines,
+            VisualisableStatusBar,
+        ]:
             if not any(
                 isinstance(p, default_plugin_cls) for p, _ in self._registered_plugins
             ):
@@ -254,13 +311,30 @@ class Visualiser:
         """
         self.registered_plugins_mappings.grid_lines.a = 1
         if regular_update_interval:
-            timer = app.Timer(
+            timer = self.app.Timer(
                 interval=regular_update_interval,
                 connect=lambda ev: self.interval_update(),
                 start=True,
             )
         self.interval_update()  # initial update
-        app.run()
+        self.app.run()
         self.thread_exit_event.set()
         for t in self.threads:
             t.join()
+
+    def spin_once(self):
+        app.process_events()
+
+
+GLOBAL_visualiser = None
+
+
+def gcv() -> Visualiser:
+    """
+    Get current visualiser
+    """
+
+    global GLOBAL_visualiser
+    if GLOBAL_visualiser is None:
+        GLOBAL_visualiser = Visualiser()
+    return GLOBAL_visualiser
