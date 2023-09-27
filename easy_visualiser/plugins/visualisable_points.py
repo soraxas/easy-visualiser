@@ -6,7 +6,6 @@ from easy_visualiser.modded_components import MarkerWithModifiablePos
 from easy_visualiser.plugin_capability import TriggerableMixin
 from easy_visualiser.plugins import VisualisablePlugin
 from easy_visualiser.utils import ScalableFloat
-
 from easy_visualiser.utils.dummy import DUMMY_POINTS
 
 
@@ -23,7 +22,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
         self._antialias = ScalableFloat(0.25, upper_bound=10)
         self._cached_plotting_kwargs = dict()
 
-        self.keys = [
+        self.add_mappings(
             ModalControl(
                 "m",
                 [
@@ -71,7 +70,7 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
                 "Anti-alias",
             ),
             Mapping("z", "reset zoom", lambda: self.set_range()),
-        ]
+        )
         self.point_data = points
 
     def set_antialias(self, value):

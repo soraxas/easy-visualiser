@@ -100,7 +100,7 @@ class VisualisableMoosSwarm(
             connect=lambda ev: self.__center_view(),
             iterations=-1,
         )
-        self.keys = [
+        self.add_mapping(
             ModalControl(
                 "m",
                 [
@@ -132,7 +132,7 @@ class VisualisableMoosSwarm(
                 ],
                 modal_name="moos swarm",
             )
-        ]
+        )
 
     def moos_vehicle_msg_cb(self, msg):
         data_list = list(pair.split("=") for pair in msg.string().split(","))

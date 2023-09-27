@@ -4,7 +4,7 @@ from typing import Callable
 import rosgraph
 import rospy
 
-from . import Singleton
+from . import DataSourceSingleton
 
 ros_master_url = os.environ["ROS_MASTER_URI"]
 
@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 my_print = lambda *args: print("[RosComm]", *args)
 
 
-class RosComm(Singleton):
+class RosComm(DataSourceSingleton):
     initialised = False
 
     def __init__(self):

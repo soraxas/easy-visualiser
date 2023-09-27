@@ -80,7 +80,7 @@ class VisualisableBathy(
         self.depth_datapath = depth_datapath
         self._only_display_actual_bathy = only_display_actual_bathy
         self.guarding_callable = lambda: self.bathy_toggle
-        self.keys = [
+        self.add_mapping(
             ModalControl(
                 "b",
                 [
@@ -93,7 +93,7 @@ class VisualisableBathy(
                 ],
                 modal_name="bathymetry",
             )
-        ]
+        )
 
     def __toggle_bathy_cb(self):
         self.bathy_toggle.toggle()

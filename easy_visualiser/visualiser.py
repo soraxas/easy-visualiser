@@ -3,11 +3,12 @@ import os
 import threading
 import time
 from types import SimpleNamespace
-from typing import Callable, Iterable, List, Optional, Set, Tuple, Union
+from typing import Callable, Coroutine, Iterable, List, Optional, Set, Tuple, Union
 
 from vispy import app, scene
 from vispy.scene import Grid, Widget
 
+from .input import DataSource
 from .modal_control import ModalState
 from .plugin_capability import (
     PluginState,
@@ -16,15 +17,22 @@ from .plugin_capability import (
     WidgetsMixin,
 )
 from .plugins import (
+    VisualisableGridLines,
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
     VisualisablePrincipleAxis,
     VisualisableStatusBar,
 )
-from .plugins.visualisable_gridlines import VisualisableGridLines
 from .utils import topological_sort
 
 os.putenv("NO_AT_BRIDGE", "1")
+
+import asyncio
+
+
+async def maybe_await(callback: Callable):
+    # result = callback
+    pass
 
 
 @dataclasses.dataclass
@@ -72,6 +80,7 @@ class Visualiser(PlottingUFuncMixin):
     polling_registry: List[VisualisablePlugin] = []
     # raw registered plugin list
     _registered_plugins: List[Tuple[VisualisablePlugin, Set[str]]] = []
+    _registered_datasources: List[DataSource] = []
     # sorted version
     plugins: List[VisualisablePlugin] = []
 
@@ -105,6 +114,9 @@ class Visualiser(PlottingUFuncMixin):
         self._registered_plugins_mappings: Optional[VisualisablePluginNameSpace] = None
         # self.initialised = False
 
+        self.async_loop = asyncio.get_event_loop()
+        self.async_loop.set_debug(True)
+
     def _initialise_new_plugins(self):
         assert self.initialised
 
@@ -116,6 +128,9 @@ class Visualiser(PlottingUFuncMixin):
 
         ###########################################################
         # on initialisation hooks
+        for data_source in self._registered_datasources:
+            data_source.on_initialisation(visualiser=self)
+        # on initialisation hooks
         for plugin in _uninitialised_plugins:
             self.registered_plugins_mappings._add_mapping(plugin)
             try:
@@ -125,6 +140,8 @@ class Visualiser(PlottingUFuncMixin):
 
         ###########################################################
         # build plugin
+        for data_source in self._registered_datasources:
+            data_source.construct_plugin()
         for plugin in _uninitialised_plugins:
             try:
                 ###########################################################
@@ -241,10 +258,22 @@ class Visualiser(PlottingUFuncMixin):
                 )
             self._initialise_new_plugins()
 
+    def register_datasource(self, data_source: DataSource):
+        self._registered_datasources.append(data_source)
+
+    def register_datasource(self, data_source: DataSource):
+        self._registered_datasources.append(data_source)
+
     def interval_update(self):
         for plugin in self.plugins:
             if plugin.state is PluginState.ON:
                 plugin.update()
+
+        # ##############################
+        # self.async_loop.stop()
+        # self.async_loop.run_forever()
+        # ##############################
+
         # self.initialised = True
 
     @property
@@ -280,11 +309,64 @@ class Visualiser(PlottingUFuncMixin):
         """An easy way to reference the parent of all visual elements."""
         return self.view.scene
 
+    def add_coroutine_task(self, func: Coroutine):
+        self.async_loop.create_task(func)
+
     def run_in_background_thread(self, func: Callable, run_every: float):
+        return
         self.threads.append(
             threading.Thread(target=self.__thread_runner, args=(func, run_every))
         )
+        # return
         self.threads[-1].start()
+
+        # import asyncio
+        # async def task():
+        #         print("start")
+        #         await asyncio.sleep(.6)
+        #         print("mid")
+        #         await asyncio.sleep(10)
+        #         print("end")
+
+        # # # self.async_task = asyncio.create_task(task())
+        # loop = asyncio.get_event_loop()
+        # loop.set_debug(True)
+
+        # # # async def create_tasks_func():
+        # # #     tasks = list()
+        # # #     for i in range(5):
+        # # #         tasks.append(asyncio.create_task(func(i)))
+        # # #     await asyncio.wait(tasks)
+        # # loop.run_until_complete(task())
+
+        # print(loop.is_running())
+
+        # async def main():
+        #     await asyncio.sleep(1)
+        #     print('hello')
+
+        # # asyncio.run(task())
+
+        # loop.create_task(task())
+
+        # loop.stop()
+        # loop.run_forever()
+        # print("=========")
+        # import time
+        # time.sleep(.5)
+
+        # loop.stop()
+        # loop.run_forever()
+        # print("=========")
+        # import time
+        # time.sleep(.2)
+
+        # loop.stop()
+        # loop.run_forever()
+        # print("=========")
+        # loop.stop()
+        # loop.run_forever()
+        # print("=========")
 
     def __thread_runner(self, func: Callable, run_every: float):
         while not self.thread_exit_event.is_set():
@@ -300,16 +382,34 @@ class Visualiser(PlottingUFuncMixin):
             VisualisableStatusBar,
         ]:
             if not any(
-                isinstance(p, default_plugin_cls) for p, _ in self._registered_plugins
+                type(p) == default_plugin_cls for p, _ in self._registered_plugins
             ):
+                # if the plugin had already been manually added, skip it
+                # note that we use type (instead of isinstance) to ignore any derived
+                # class by the user. So if they derived a class, we assume that it's
+                # different than the default class, so we will still add the default.
                 self.register_plugin(default_plugin_cls())
+
+    def async_interval_update(self):
+        # process all scheduled callbacks
+        self.async_loop.stop()
+        self.async_loop.run_forever()
+        # print('-', end='')
+        # import sys
+        # sys.stdout.flush()
 
     def run(self, regular_update_interval: Optional[float] = None):
         """
         The main function to start the visualisation window after everything had been
         set up.
         """
-        self.registered_plugins_mappings.grid_lines.a = 1
+
+        asyncio_event_loop_timer = app.Timer(
+            interval=0.2,
+            connect=lambda ev: self.async_interval_update(),
+            start=True,
+        )
+
         if regular_update_interval:
             timer = self.app.Timer(
                 interval=regular_update_interval,

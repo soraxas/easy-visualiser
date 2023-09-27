@@ -10,7 +10,7 @@ class AlternativeVisTrigger(TriggerableMixin, VisualisablePlugin):
 
     def __init__(self, construct_callback: callbackType, toggle_callback: callbackType):
         super().__init__()
-        self.keys = [Mapping("t", "toggle", self.__toggle)]
+        self.add_mapping(Mapping("t", "toggle", self.__toggle))
         self.construct_callback = construct_callback
         self.toggle_callback = toggle_callback
 

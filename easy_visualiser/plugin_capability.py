@@ -5,6 +5,7 @@ import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 
+import numpy as np
 from vispy.scene import Widget
 
 if sys.version_info >= (3, 8):
@@ -14,7 +15,9 @@ else:
     from typing_extensions import Literal, TypedDict, overload
 
 if TYPE_CHECKING:
-    from .key_mapping import Mapping
+    from easy_visualiser.plugins import VisualisablePlugin
+
+    from .key_mapping import Key, Mapping
     from .modal_control import ModalControl
 
 
@@ -37,17 +40,80 @@ class PluginState(enum.Enum):
 
 
 class TriggerableMixin:
-    keys: List[Union["ModalControl", "Mapping.MappingRawType"]]
+    __keys: List[Union["ModalControl", "Mapping.MappingRawType"]] = []
+
+    @property
+    def keys(self):
+        raise ValueError("Not accessible. Use self.add_mapping(...)")
+
+    def add_mapping(
+        self,
+        mapping: Union["ModalControl", "Mapping.MappingRawType"],
+        front: bool = False,
+    ):
+        if front:
+            self.__keys.insert(0, mapping)
+        else:
+            self.__keys.append(mapping)
+
+    def add_mappings(
+        self,
+        *mappings: Union["ModalControl", "Mapping.MappingRawType"],
+        front: bool = False,
+    ):
+        if front:
+            # reverse the mapping, so that we will add all mappings to the front
+            # in the correct order
+            mappings = reversed(mappings)
+        for mapping in mappings:
+            self.add_mapping(mapping, front=front)
 
     def get_root_mappings(self) -> List["Mapping"]:
         from .modal_control import ModalControl
 
-        return [item for item in self.keys if not isinstance(item, ModalControl)]
+        return [item for item in self.__keys if not isinstance(item, ModalControl)]
 
     def get_modal_control(self) -> List["ModalControl"]:
         from .modal_control import ModalControl
 
-        return [item for item in self.keys if isinstance(item, ModalControl)]
+        return [item for item in self.__keys if isinstance(item, ModalControl)]
+
+    def replace_mappings_with(
+        self,
+        *mappings: Union["ModalControl", "Mapping.MappingRawType"],
+        front: bool = False,
+    ):
+        self.__keys.clear()
+        self.add_mappings(*mappings, front=front)
+
+    def get_copied_mapping_list(self):
+        return list(self.__keys)
+
+
+class ZoomableMixin(TriggerableMixin):
+    __bounds = None
+
+    def __init__(self):
+        super().__init__()
+        from .key_mapping import Key, Mapping
+
+        self.add_mapping(
+            Mapping(
+                Key(["z"]),
+                f"zoom to [{self.__class__.__name__}]",
+                self.__zoom_cb,
+            ),
+            front=True,
+        )
+
+    def __zoom_cb(self):
+        if self.__bounds is None:
+            self.set_range()
+        else:
+            self.set_range(*self.__bounds)
+
+    def set_bounds(self, bounds: np.ndarray):
+        self.__bounds = bounds
 
 
 class ToggleableMixin(TriggerableMixin):

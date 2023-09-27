@@ -17,9 +17,9 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
         self._marker_scale = ScalableFloat(1, upper_bound=50)
         self._antialias = ScalableFloat(0.25, upper_bound=10)
 
-        self.keys = [
+        self.add_mapping(
             Mapping("z", "reset zoom", lambda: self.set_range()),
-        ]
+        )
         self._z_scale = ScalableFloat(0.3, upper_bound=10)
         with Image.open(image_path) as im:
             self.z_data = np.array(im.convert("L"))
@@ -37,7 +37,7 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
         __scale_factor = 1.25
         self.grid_every = IncrementableInt(1, lower_bound=1)
 
-        self.keys[:0] = [
+        self.add_mappings(
             MappingOnlyDisplayText(lambda: f"scale: {float(self._z_scale):.2f}"),
             Mapping(
                 Key.Plus,
@@ -71,7 +71,8 @@ class VisualisableMesh(ToggleableMixin, TriggerableMixin, VisualisablePlugin):
                 ],
                 "grid density",
             ),
-        ]
+            front=True,
+        )
 
     def _reload_pos_data(self, update_grid=False):
         every = int(self.grid_every)

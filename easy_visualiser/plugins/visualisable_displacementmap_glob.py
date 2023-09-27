@@ -34,11 +34,12 @@ class VisualisableDisplacementMapLoopWithGlob(
         super().__init__(image_path=self.__get_next_image())
 
         # line to display current image
-        self.keys[:0] = [
+        self.add_mapping(
             MappingOnlyDisplayText(
                 lambda: f"Displaying: {self.current_image_path.split('/')[-1]}\n"
             ),
-        ]
+            front=True,
+        )
 
     def __get_next_image(self):
         self.current_image_path = next(self.iterator)
