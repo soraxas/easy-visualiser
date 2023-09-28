@@ -3,17 +3,7 @@ import os
 import threading
 import time
 from types import SimpleNamespace
-from typing import (
-    Callable,
-    Coroutine,
-    Hashable,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Callable, Coroutine, Hashable, Iterable, List, Optional, Set, Tuple
 
 from vispy import app, scene
 from vispy.scene import Grid, Widget
@@ -34,6 +24,7 @@ from .plugins import (
     VisualisableStatusBar,
 )
 from .utils import ToggleableBool, topological_sort
+from .visualiser_miscs import VisualiserEasyAccesserMixin, VisualiserMiscsMixin
 
 os.putenv("NO_AT_BRIDGE", "1")
 
@@ -116,7 +107,7 @@ class VisualisablePluginNameSpace(SimpleNamespace):
 from .ufunc import PlottingUFuncMixin
 
 
-class Visualiser(PlottingUFuncMixin):
+class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesserMixin):
     """
     The core visualiser that can be created to represent an instance of a window
     """
@@ -126,7 +117,7 @@ class Visualiser(PlottingUFuncMixin):
     _registered_plugins: List[Tuple[VisualisablePlugin, Set[str]]] = []
     _registered_datasources: List[DataSource] = []
     # sorted version
-    plugins: List[VisualisablePlugin] = []
+    # plugins: List[VisualisablePlugin] = []
 
     __closing = ToggleableBool(False)
 
@@ -328,35 +319,6 @@ class Visualiser(PlottingUFuncMixin):
 
         # self.initialised = True
 
-    @property
-    def initialised(self):
-        return self._registered_plugins_mappings is not None
-
-    @property
-    def triggerable_plugins(
-        self,
-    ) -> Iterable[Union[VisualisablePlugin, TriggerableMixin]]:
-        yield from (p for p in self.active_plugins if isinstance(p, TriggerableMixin))
-
-    @property
-    def plugins(self) -> VisualisablePluginNameSpace:
-        if not self.initialised:
-            self.initialise()
-            # raise RuntimeError("Visualiser has not been initialised yet!")
-        return self._registered_plugins_mappings
-
-    @property
-    def active_plugins(self) -> Iterable[VisualisablePlugin]:
-        for p in self.plugins:
-            if isinstance(p, ToggleableMixin) and p.state is PluginState.OFF:
-                continue
-            yield p
-
-    @property
-    def visual_parent(self):
-        """An easy way to reference the parent of all visual elements."""
-        return self.view.scene
-
     def add_coroutine_task(self, func: Coroutine):
         self.async_loop.create_task(func)
 
@@ -426,7 +388,7 @@ class Visualiser(PlottingUFuncMixin):
             return
         for default_plugin_cls in [
             VisualisablePrincipleAxis,
-            #    VisualisableGridLines,
+            VisualisableGridLines,
             VisualisableStatusBar,
         ]:
             if not any(
@@ -472,17 +434,3 @@ class Visualiser(PlottingUFuncMixin):
 
     def spin_once(self):
         app.process_events()
-
-
-GLOBAL_visualiser = None
-
-
-def gcv() -> Visualiser:
-    """
-    Get current visualiser
-    """
-
-    global GLOBAL_visualiser
-    if GLOBAL_visualiser is None:
-        GLOBAL_visualiser = Visualiser()
-    return GLOBAL_visualiser

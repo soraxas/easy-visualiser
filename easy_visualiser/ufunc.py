@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
 from vispy import scene
 
@@ -196,25 +196,16 @@ class PlottingUFuncMixin(ABC):
     def spin_until_keypress(self: "Visualiser"):
         # _pressed = ToggleableBool(False)
 
-        with self._get_existing_or_default(
+        with self.get_existing_or_construct(
             plugin_type=_SpinUntlKeyPress_Helper
         ) as plug:
             while not plug.pressed:
                 self.spin_once()
 
-    def _get_existing_or_default(
-        self, plugin_type: Type["VisualisablePlugin"], name: str = None, **kwargs
-    ):
-        name = name or f"_default__{plugin_type.__name__}"
-
-        if name not in self.plugins:
-            self.register_plugin(plugin_type(**kwargs), name=name)
-        return self.plugins[name]
-
     def scatter(self: "Visualiser", pos, *args, name: str = None, **kwargs):
         pos = ensure_nparray(pos)
 
-        self._get_existing_or_default(
+        self.get_existing_or_construct(
             plugin_type=VisualisablePoints,
             name=name,
         ).set_points(pos=pos, *args, **kwargs)
@@ -239,7 +230,7 @@ class PlottingUFuncMixin(ABC):
             )
         )
 
-        self._get_existing_or_default(
+        self.get_existing_or_construct(
             plugin_type=VisualisableLine,
             name=name,
         ).set_line(pos=pos, *args, **kwargs)
