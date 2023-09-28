@@ -131,14 +131,21 @@ class ToggleableMixin(TriggerableMixin):
     @abstractmethod
     def turn_off_plugin(self) -> bool:
         self.state = PluginState.OFF
+
+        self.visualiser.hooks.on_plugins_state_change.on_event()
+        return True
+
+    def construct_plugin(self) -> bool:
+        if not super().construct_plugin():
+            return False
+        self.turn_on_plugin()
         return True
 
     @abstractmethod
     def turn_on_plugin(self) -> bool:
-        if isinstance(self, FileModificationGuardableMixin):
-            if not os.path.exists(self.target_file):
-                return False
         self.state = PluginState.ON
+
+        self.visualiser.hooks.on_plugins_state_change.on_event()
         return True
 
     def get_root_mappings(self) -> List["Mapping"]:
@@ -150,6 +157,13 @@ class ToggleableMixin(TriggerableMixin):
         if self.state.is_built():
             return super().get_modal_control()
         return []
+
+    def __enter__(self):
+        self.turn_on_plugin()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.turn_off_plugin()
 
 
 class GuardableMixin:
@@ -174,6 +188,12 @@ class FileModificationGuardableMixin(GuardableMixin):
     @abstractmethod
     def target_file(self) -> str:
         raise NotImplementedError()
+
+    @abstractmethod
+    def turn_on_plugin(self) -> bool:
+        if not os.path.exists(self.target_file):
+            return False
+        return super().turn_on_plugin()
 
 
 class CallableAndFileModificationGuardableMixin(FileModificationGuardableMixin, ABC):

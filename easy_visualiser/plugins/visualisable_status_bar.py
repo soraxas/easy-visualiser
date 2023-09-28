@@ -21,8 +21,8 @@ class VisualisableStatusBar(WidgetsMixin, VisualisablePlugin):
 
     def on_initialisation(self, *args, **kwargs):
         super().on_initialisation(*args, **kwargs)
-        self.visualiser.hooks.on_initialisation_finish.append(self.update_status)
-        self.visualiser.hooks.on_keypress_finish.append(self.update_status)
+        self.visualiser.hooks.on_initialisation_finish.add_hook(self.update_status)
+        self.visualiser.hooks.on_keypress_finish.add_hook(self.update_status)
 
     def update_status(self):
         self.status_bar.text = self.visualiser.current_modal.state.to_help_msg()

@@ -36,7 +36,7 @@ class VisualisablePlugin(ABC):
 
     @property
     def other_plugins(self) -> "VisualisablePluginNameSpace":
-        return self.visualiser.registered_plugins_mappings
+        return self.visualiser.plugins
 
     @overrides.final
     def update(self, force=False) -> None:

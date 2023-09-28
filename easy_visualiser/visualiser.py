@@ -3,7 +3,17 @@ import os
 import threading
 import time
 from types import SimpleNamespace
-from typing import Callable, Coroutine, Iterable, List, Optional, Set, Tuple, Union
+from typing import (
+    Callable,
+    Coroutine,
+    Hashable,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 from vispy import app, scene
 from vispy.scene import Grid, Widget
@@ -23,7 +33,7 @@ from .plugins import (
     VisualisablePrincipleAxis,
     VisualisableStatusBar,
 )
-from .utils import topological_sort
+from .utils import ToggleableBool, topological_sort
 
 os.putenv("NO_AT_BRIDGE", "1")
 
@@ -35,10 +45,44 @@ async def maybe_await(callback: Callable):
     pass
 
 
+import warnings
+
+
+class HookList(dict):
+    def on_event(self, ev=None):
+        for hook in self.values():
+            hook()
+
+    def add_hook(self, callback: Callable, identifier: Hashable = None):
+        identifier = identifier or callable
+
+        # represent it as dict, so that it's easier to remove hook
+        self[identifier] = callback
+
+    def remove_hook(self, identifier: Hashable):
+        out = self.pop(identifier, None)
+        if out is None:
+            warnings.warn(
+                f"Given identifier '{identifier}' to remove hook, but no was found. Available: {self}."
+            )
+        return out
+
+
 @dataclasses.dataclass
 class VisualiserHooks:
-    on_initialisation_finish: List[Callable]
-    on_keypress_finish: List[Callable]
+    on_initialisation_finish: HookList
+    on_keypress_finish: HookList
+    on_visualiser_close: HookList
+
+    def __init__(self):
+        self.on_initialisation_finish = HookList()
+        self.on_keypress_finish = HookList()
+        self.on_visualiser_close = HookList()
+
+    @property
+    def on_plugins_state_change(self) -> HookList:
+        # alias
+        return self.on_keypress_finish
 
 
 class VisualisablePluginNameSpace(SimpleNamespace):
@@ -84,6 +128,8 @@ class Visualiser(PlottingUFuncMixin):
     # sorted version
     plugins: List[VisualisablePlugin] = []
 
+    __closing = ToggleableBool(False)
+
     def __init__(
         self,
         title: str = "untitled",
@@ -102,7 +148,7 @@ class Visualiser(PlottingUFuncMixin):
         self.auto_add_default_plugins = auto_add_default_plugins
 
         self.current_modal = ModalState(visualiser=self)
-        self.hooks = VisualiserHooks([], [])
+        self.hooks = VisualiserHooks()
         # build grid
         self.grid: Grid = self.canvas.central_widget.add_grid(margin=grid_margin)
         # # col num just to make it on the right size (0 is left)
@@ -132,7 +178,7 @@ class Visualiser(PlottingUFuncMixin):
             data_source.on_initialisation(visualiser=self)
         # on initialisation hooks
         for plugin in _uninitialised_plugins:
-            self.registered_plugins_mappings._add_mapping(plugin)
+            self.plugins._add_mapping(plugin)
             try:
                 plugin.on_initialisation(visualiser=self)
             except VisualisablePluginInitialisationError as e:
@@ -173,13 +219,14 @@ class Visualiser(PlottingUFuncMixin):
             except VisualisablePluginInitialisationError as e:
                 print(str(e))
 
-        for hook in self.hooks.on_initialisation_finish:
-            hook()
+        self.hooks.on_initialisation_finish.on_event()
 
     def initialise(self):
         """
         The initialisation function that initialise each registered plugin
         """
+        if self.initialised:
+            return
         self._add_default_plugins()
 
         self._registered_plugins_mappings = VisualisablePluginNameSpace(
@@ -189,7 +236,7 @@ class Visualiser(PlottingUFuncMixin):
         # check plugin dependencies
         for plugin, deps in self._registered_plugins:
             for dep in deps:
-                if dep not in self.registered_plugins_mappings:
+                if dep not in self.plugins:
                     raise ValueError(
                         f"The dependency '{dep}' for plugin '{plugin.name}' "
                         f"has not been registered!"
@@ -198,7 +245,7 @@ class Visualiser(PlottingUFuncMixin):
         _plugins_dependency_list = [
             (
                 plugin_data[0],
-                set(self.registered_plugins_mappings[dep] for dep in plugin_data[1]),
+                set(self.plugins[dep] for dep in plugin_data[1]),
             )
             for plugin_data in self._registered_plugins
         ]
@@ -230,9 +277,17 @@ class Visualiser(PlottingUFuncMixin):
                             return True
 
             result = process()
-            for _hook in self.hooks.on_keypress_finish:
-                _hook()
+            self.hooks.on_keypress_finish.on_event()
             return result
+
+        @self.canvas.connect
+        def on_close(ev):
+            self.hooks.on_visualiser_close.on_event()
+            self.__closing.set(True)
+
+    def __bool__(self):
+        """Represent whether this visualiser is closing or not"""
+        return not bool(self.__closing)
 
     def register_plugin(
         self,
@@ -257,9 +312,6 @@ class Visualiser(PlottingUFuncMixin):
                     "There are dependencies given, but visualiser had already been initialised!"
                 )
             self._initialise_new_plugins()
-
-    def register_datasource(self, data_source: DataSource):
-        self._registered_datasources.append(data_source)
 
     def register_datasource(self, data_source: DataSource):
         self._registered_datasources.append(data_source)
@@ -299,10 +351,6 @@ class Visualiser(PlottingUFuncMixin):
             if isinstance(p, ToggleableMixin) and p.state is PluginState.OFF:
                 continue
             yield p
-
-    @property
-    def registered_plugins_mappings(self) -> VisualisablePluginNameSpace:
-        return self.plugins
 
     @property
     def visual_parent(self):
