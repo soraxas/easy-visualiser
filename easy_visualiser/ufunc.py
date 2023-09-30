@@ -203,6 +203,9 @@ class PlottingUFuncMixin(ABC):
                 self.spin_once()
 
     def scatter(self: "Visualiser", pos, *args, name: str = None, **kwargs):
+        """
+        Scatter plots.
+        """
         pos = ensure_nparray(pos)
 
         self.get_existing_or_construct(

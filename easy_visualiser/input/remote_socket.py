@@ -1,5 +1,6 @@
 import asyncio
 import enum
+import functools
 import inspect
 import os
 import queue
@@ -130,6 +131,21 @@ class RemoteControlProxyDatasource(DataSourceSingleton):
             self.queue_io.output_queue.put(out)
 
 
+def as_proxy(target_func):
+    def intermediate_functor(_):
+        # this better handle the docstring.
+        @functools.wraps(target_func)
+        def _wrapped(self: "EasyVisualiserClientProxy", *args, **kwargs):
+            return self.visualiser_server.method_call(
+                target_func.__name__, args, kwargs
+            )
+
+        return _wrapped
+
+    return intermediate_functor
+
+
+@functools.wraps(Visualiser, updated=())
 class EasyVisualiserClientProxy:
     """
     Proxy client for visualiser
@@ -142,6 +158,14 @@ class EasyVisualiserClientProxy:
         self.uri = uri
 
         self.visualiser_server = Pyro5.api.Proxy(self.uri)
+
+    @as_proxy(Visualiser.scatter)
+    def scatter(self):
+        ...
+
+    @as_proxy(Visualiser.plot)
+    def plot(self):
+        ...
 
     def __getattr__(self, name):
         try:
