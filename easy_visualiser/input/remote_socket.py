@@ -1,8 +1,10 @@
 import asyncio
 import inspect
 import os
+import queue
 import stat
 import threading
+from dataclasses import dataclass
 from typing import Callable, List
 
 import Pyro5.api
@@ -13,10 +15,17 @@ from easy_visualiser import Visualiser
 from . import DataSourceSingleton
 
 
+@dataclass
+class PyroDaemonIO:
+    input_queue = queue.Queue()
+    output_queue = queue.Queue()
+
+
 class MyPyroDaemon(threading.Thread):
-    def __init__(self, msg_queue: asyncio.Queue):
+    def __init__(self, queue_io: PyroDaemonIO):
         super().__init__()
-        self.msg_queue = msg_queue
+        self.queue_io = queue_io
+
         self.started = threading.Event()
 
     def run(self, socket_name: str = "/tmp/easy_visualiser_remote-soc"):
@@ -44,17 +53,25 @@ class MyPyroDaemon(threading.Thread):
 
         @Pyro5.api.expose
         class PyroAdapter:
-            def message(_, messagetext, args, kwargs):
-                self.msg_queue.put_nowait((messagetext, args, kwargs))
+            def message(__self, messagetext, args=tuple(), kwargs={}):
+                logger.trace("requesting {}", messagetext)
+                self.queue_io.input_queue.put((messagetext, args, kwargs))
+                ok = self.queue_io.output_queue.get()
+                logger.trace("got {}", ok)
+                return ok
+
+            def message_nowait(__self, messagetext, args=tuple(), kwargs={}):
+                logger.trace("requesting {}", messagetext)
+                self.queue_io.input_queue.put((messagetext, args, kwargs))
+
+            def __bool__(__self):
+                return __self.message("__bool__")
 
         self.uri = daemon.register(PyroAdapter, "easy_visualiser.Visualiser")
         print(self.uri)
 
         self.started.set()
         daemon.requestLoop()
-
-    def send_message(self, messagetext, *args, **kwargs):
-        self.msg_queue.put_nowait((messagetext, args, kwargs))
 
 
 class RemoteControlProxyDatasource(DataSourceSingleton):
@@ -63,13 +80,13 @@ class RemoteControlProxyDatasource(DataSourceSingleton):
     def __init__(self, uri_return):
         super().__init__()
         self.callbacks: List[Callable] = []
-        self.msg_queue = asyncio.Queue()
+        self.queue_io = PyroDaemonIO()
 
         self.uri_return = uri_return  # multiprocessing queue
 
     def construct_plugin(self):
         # create a pyro daemon with object, running in its own worker thread
-        pyro_thread = MyPyroDaemon(self.msg_queue)
+        pyro_thread = MyPyroDaemon(self.queue_io)
         pyro_thread.daemon = True
         pyro_thread.start()
         pyro_thread.started.wait()
@@ -83,12 +100,15 @@ class RemoteControlProxyDatasource(DataSourceSingleton):
         asyncio.get_running_loop()
 
         while self.visualiser:
-            msg = await self.msg_queue.get()
-            print(msg)
+            logger.trace("retrieving request")
+            msg = self.queue_io.input_queue.get()
+            logger.trace("got request: {}", msg)
 
             method_name, args, kwargs = msg
 
-            getattr(self.visualiser, method_name)(*args, **kwargs)
+            out = getattr(self.visualiser, method_name)(*args, **kwargs)
+
+            self.queue_io.output_queue.put(out)
 
 
 class EasyVisualiserClientProxy:
