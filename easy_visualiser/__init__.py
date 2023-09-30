@@ -14,31 +14,40 @@ def gcv() -> Visualiser:
     return GLOBAL_visualiser
 
 
-def get_remote_visualiser() -> Visualiser:
+def get_remote_visualiser(uri=None) -> Visualiser:
     from .input.remote_socket import EasyVisualiserClientProxy
 
-    viz = EasyVisualiserClientProxy()
+    viz = EasyVisualiserClientProxy(uri=uri)
 
     return viz
 
 
-def spawn_daemon_visualiser():
+def spawn_daemon_visualiser() -> str:
     """
     Spawn a visualiser in a separate process
     """
 
     import multiprocessing
 
-    def __daemon_visualiser(port):
+    def __daemon_visualiser(uri_return_queue):
         import easy_visualiser as ev
         from easy_visualiser.input.remote_socket import RemoteControlProxyDatasource
 
         viz = ev.Visualiser()
-        viz.register_datasource(RemoteControlProxyDatasource())
+        viz.register_datasource(RemoteControlProxyDatasource(uri_return_queue))
         return viz.run()
 
-    p = multiprocessing.Process(target=__daemon_visualiser, args=(1,))
+    import multiprocessing
+
+    uri_return_queue = multiprocessing.Queue()
+    p = multiprocessing.Process(target=__daemon_visualiser, args=(uri_return_queue,))
     # the following ensure that this process will gets killed when main process exit
     p.daemon = True
     p.start()
-    return p
+    return uri_return_queue.get()
+
+
+def spawn_local_visualiser() -> Visualiser:
+    from .input.remote_socket import EasyVisualiserClientProxy
+
+    return EasyVisualiserClientProxy(uri=spawn_daemon_visualiser())

@@ -1,5 +1,7 @@
 import asyncio
 import inspect
+import os
+import stat
 import threading
 from typing import Callable, List
 
@@ -17,8 +19,28 @@ class MyPyroDaemon(threading.Thread):
         self.msg_queue = msg_queue
         self.started = threading.Event()
 
-    def run(self):
-        daemon = Pyro5.api.Daemon(port=9413)
+    def run(self, socket_name: str = "/tmp/easy_visualiser_remote-soc"):
+        # remove any existing stale socket
+        try:
+            if stat.S_ISSOCK(os.stat(socket_name).st_mode):
+                os.remove(socket_name)
+        except FileNotFoundError:
+            pass
+        except OSError as err:
+            # Directory may have permissions only to create socket.
+            logger.error(
+                "Unable to check or remove stale UNIX socket %r: %r", socket_name, err
+            )
+        try:
+            if stat.S_ISSOCK(os.stat(socket_name).st_mode):
+                os.remove(socket_name)
+        except FileNotFoundError:
+            pass
+
+        daemon = Pyro5.api.Daemon(
+            # port=9413,
+            unixsocket=socket_name,
+        )
 
         @Pyro5.api.expose
         class PyroAdapter:
@@ -38,10 +60,12 @@ class MyPyroDaemon(threading.Thread):
 class RemoteControlProxyDatasource(DataSourceSingleton):
     # p_msg_recv: MsgXAsyncReceiver
 
-    def __init__(self):
+    def __init__(self, uri_return):
         super().__init__()
         self.callbacks: List[Callable] = []
         self.msg_queue = asyncio.Queue()
+
+        self.uri_return = uri_return  # multiprocessing queue
 
     def construct_plugin(self):
         # create a pyro daemon with object, running in its own worker thread
@@ -49,6 +73,9 @@ class RemoteControlProxyDatasource(DataSourceSingleton):
         pyro_thread.daemon = True
         pyro_thread.start()
         pyro_thread.started.wait()
+
+        # report the uri for this process
+        self.uri_return.put(str(pyro_thread.uri))
 
         self.visualiser.add_coroutine_task(self.__collect_msg())
 
@@ -69,8 +96,11 @@ class EasyVisualiserClientProxy:
     Proxy client for visualiser
     """
 
-    def __init__(self, port: int = 9413):
-        self.uri = f"PYRO:easy_visualiser.Visualiser@localhost:{port}"
+    def __init__(self, port: int = 9413, uri: str = None):
+        if uri is None:
+            uri = f"PYRO:easy_visualiser.Visualiser@localhost:{port}"
+
+        self.uri = uri
 
         self.visualiser_server = Pyro5.api.Proxy(self.uri)
 
