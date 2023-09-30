@@ -110,16 +110,15 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
 
         kwargs["pos"] = pos
 
-        if (self.points_visual.num_points() == pos.shape[0]) or (
-            self._cached_plotting_kwargs != kwargs
-        ):
-            # set new data, as the shape is different
-            self.points_visual.set_data(*args, **kwargs)
+        # self._cached_plotting_kwargs != kwargs
+        if self.points_visual.num_points() == pos.shape[0]:
+            # self._reload_pos_data(pos)
+            # reload with new location
+            self.points_visual.update_data(*args, **kwargs)
             self._cached_plotting_kwargs = dict(kwargs)
         else:
-            # reload with new location
-            # self._reload_pos_data(pos)
-            self.points_visual.update_data(*args, **kwargs)
+            # set new data, as the shape is different
+            self.points_visual.set_data(*args, **kwargs)
 
         if not self.had_set_range:
             self.set_range()

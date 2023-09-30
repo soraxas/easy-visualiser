@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 
 class DataSource(ABC):
-    visualiser: "Visualiser"
+    visualiser: "Visualiser" = None
     name: str
 
     def __init__(self, name: Optional[str] = None):

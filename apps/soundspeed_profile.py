@@ -3,7 +3,7 @@ import pickle
 
 import numpy as np
 from tap import Tap
-from vispy import app, scene
+from vispy import scene
 
 from easy_visualiser.key_mapping import Mapping
 from easy_visualiser.modded_components import LockedPanZoomCamera, SyncedPanZoomCamera
@@ -239,4 +239,4 @@ if __name__ == "__main__":
     visualiser.register_plugin(VisualisableImageSynced(botz))
     ############################################
     visualiser.initialise()
-    app.run()
+    visualiser.run()

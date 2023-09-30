@@ -12,3 +12,11 @@ def gcv() -> Visualiser:
     if GLOBAL_visualiser is None:
         GLOBAL_visualiser = Visualiser()
     return GLOBAL_visualiser
+
+
+def get_remote_visualiser() -> Visualiser:
+    from .input.remote_socket import EasyVisualiserClientProxy
+
+    viz = EasyVisualiserClientProxy()
+
+    return viz

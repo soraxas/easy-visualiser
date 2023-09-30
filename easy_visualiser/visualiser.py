@@ -163,9 +163,13 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
             if plugin.visualiser is None
         ]
 
+        _uninitialised_datasources = [
+            d for d in self._registered_datasources if d.visualiser is None
+        ]
+
         ###########################################################
         # on initialisation hooks
-        for data_source in self._registered_datasources:
+        for data_source in _uninitialised_datasources:
             data_source.on_initialisation(visualiser=self)
         # on initialisation hooks
         for plugin in _uninitialised_plugins:
@@ -177,7 +181,7 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
 
         ###########################################################
         # build plugin
-        for data_source in self._registered_datasources:
+        for data_source in _uninitialised_datasources:
             data_source.construct_plugin()
         for plugin in _uninitialised_plugins:
             try:

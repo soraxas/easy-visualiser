@@ -2,7 +2,6 @@ from collections import namedtuple
 from typing import List
 
 import numpy as np
-from vispy import app
 from vispy.scene import XYZAxis
 from vispy.util import keys
 
