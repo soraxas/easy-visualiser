@@ -27,6 +27,8 @@ setuptools.setup(
         "numpy",
         "scipy",
         "overrides",
+        "loguru",
+        "pyro5",
         "vispy",
         "pyqt6",
         "typed-argument-parser",

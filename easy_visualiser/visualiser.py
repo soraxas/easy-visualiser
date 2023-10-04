@@ -151,8 +151,17 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         self._registered_plugins_mappings: Optional[VisualisablePluginNameSpace] = None
         # self.initialised = False
 
-        self.async_loop = asyncio.get_event_loop()
-        self.async_loop.set_debug(True)
+        # self.async_loop = asyncio.get_event_loop()
+        # self.async_loop.set_debug(True)
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+
+        self.async_loop = loop
+        # self.async_loop.set_debug(True)
+        asyncio.set_event_loop(self.async_loop)
 
     def _initialise_new_plugins(self):
         assert self.initialised
@@ -279,6 +288,7 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         def on_close(ev):
             self.hooks.on_visualiser_close.on_event()
             self.__closing.set(True)
+            self.async_loop.stop()
 
     def __bool__(self):
         """Represent whether this visualiser is closing or not"""
@@ -404,34 +414,26 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
                 # different than the default class, so we will still add the default.
                 self.register_plugin(default_plugin_cls())
 
-    def async_interval_update(self):
-        # process all scheduled callbacks
-        self.async_loop.stop()
-        self.async_loop.run_forever()
-        # print('-', end='')
-        # import sys
-        # sys.stdout.flush()
-
     def run(self, regular_update_interval: Optional[float] = None):
         """
         The main function to start the visualisation window after everything had been
         set up.
         """
 
-        asyncio_event_loop_timer = app.Timer(
-            interval=0.2,
-            connect=lambda ev: self.async_interval_update(),
-            start=True,
-        )
+        async def core_processing():
+            while self:
+                app.process_events()
+                self.interval_update()  # initial update
+                await asyncio.sleep(0.0001)
 
-        if regular_update_interval:
-            timer = app.Timer(
-                interval=regular_update_interval,
-                connect=lambda ev: self.interval_update(),
-                start=True,
-            )
+        # loop = asyncio.get_event_loop() # Here
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
+
         self.interval_update()  # initial update
-        self.app.run()
+        self.async_loop.create_task(core_processing())
+        self.async_loop.run_forever()
+
         self.thread_exit_event.set()
         for t in self.threads:
             t.join()

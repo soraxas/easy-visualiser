@@ -1,14 +1,13 @@
-import asyncio
 import enum
 import functools
 import inspect
 import os
-import queue
 import stat
 import threading
 from dataclasses import dataclass
 from typing import Callable, List
 
+import aioprocessing
 import Pyro5.api
 from loguru import logger
 
@@ -19,8 +18,10 @@ from . import DataSourceSingleton
 
 @dataclass
 class PyroDaemonIO:
-    input_queue = queue.Queue()
-    output_queue = queue.Queue()
+    input_queue = aioprocessing.AioQueue()
+    output_queue = aioprocessing.AioQueue()
+
+    # output_queue = queue.Queue()
 
 
 class PyroRemoteCallType(enum.Enum):
@@ -114,21 +115,20 @@ class RemoteControlProxyDatasource(DataSourceSingleton):
         self.visualiser.add_coroutine_task(self.__collect_msg())
 
     async def __collect_msg(self):
-        asyncio.get_running_loop()
-
+        # asyncio.get_running_loop()
         while self.visualiser:
             logger.trace("retrieving request")
-            call_type, msg = self.queue_io.input_queue.get()
+            call_type, msg = await self.queue_io.input_queue.coro_get()
             logger.trace("got request: {} ({})", msg, call_type)
 
             if call_type is PyroRemoteCallType.method_call:
                 method_name, args, kwargs = msg
-
                 out = getattr(self.visualiser, method_name)(*args, **kwargs)
             elif call_type is PyroRemoteCallType.attribute_access:
                 out = getattr(self.visualiser, msg)
 
-            self.queue_io.output_queue.put(out)
+            await self.queue_io.output_queue.coro_put(out)
+            # break
 
 
 def as_proxy(target_func):
@@ -136,9 +136,12 @@ def as_proxy(target_func):
         # this better handle the docstring.
         @functools.wraps(target_func)
         def _wrapped(self: "EasyVisualiserClientProxy", *args, **kwargs):
-            return self.visualiser_server.method_call(
-                target_func.__name__, args, kwargs
-            )
+            try:
+                return self.visualiser_server.method_call(
+                    target_func.__name__, args, kwargs
+                )
+            except Pyro5.errors.PyroError:
+                pass
 
         return _wrapped
 
@@ -175,15 +178,16 @@ class EasyVisualiserClientProxy:
             return self.visualiser_server.attribute_access(name)
             # raise NotImplementedError(f"{name}")
             # return None
-        else:
-            logger.debug("Got attr: {}", _attribute)
-            logger.opt(lazy=True).debug(
-                "Type isdatadescriptor[{}] ismethod[{}] isfunction[{}]",
-                lambda: inspect.isdatadescriptor(_attribute),
-                lambda: inspect.ismethod(_attribute),
-                lambda: inspect.isfunction(_attribute),
-            )
 
+        logger.trace("Got attr: {}", _attribute)
+        logger.opt(lazy=True).trace(
+            "Type isdatadescriptor[{}] ismethod[{}] isfunction[{}]",
+            lambda: inspect.isdatadescriptor(_attribute),
+            lambda: inspect.ismethod(_attribute),
+            lambda: inspect.isfunction(_attribute),
+        )
+
+        try:
             if inspect.isfunction(_attribute):
                 return lambda *args, **kwargs: self.visualiser_server.method_call(
                     name, args, kwargs
@@ -194,5 +198,5 @@ class EasyVisualiserClientProxy:
                 # print(type(_attribute))
                 # print(_attribute)
                 raise NotImplementedError(f"{_attribute}")
-
-        return super().__getattr__(name)
+        except (Pyro5.errors.PyroError, ConnectionRefusedError):
+            return None

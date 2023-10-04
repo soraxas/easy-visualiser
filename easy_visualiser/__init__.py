@@ -35,7 +35,10 @@ def spawn_daemon_visualiser() -> str:
 
         viz = ev.Visualiser()
         viz.register_datasource(RemoteControlProxyDatasource(uri_return_queue))
-        return viz.run()
+        print("ok-<<-")
+        viz.run()
+        print("ok")
+        exit()
 
     import multiprocessing
 
