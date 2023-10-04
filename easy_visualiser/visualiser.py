@@ -425,7 +425,7 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         )
 
         if regular_update_interval:
-            timer = self.app.Timer(
+            timer = app.Timer(
                 interval=regular_update_interval,
                 connect=lambda ev: self.interval_update(),
                 start=True,
