@@ -104,7 +104,18 @@ class VisualisablePluginNameSpace(SimpleNamespace):
         self.__dict__[plugin.name] = plugin
 
 
+from types import ModuleType
+
 from .ufunc import PlottingUFuncMixin
+
+
+class CustomApplication(app.Application):
+    def _use(self, backend_name=None):
+        if isinstance(backend_name, ModuleType):
+            self._backend_module = backend_name
+            self._backend = self.backend_module.ApplicationBackend()
+        else:
+            super()._use(backend_name)
 
 
 class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesserMixin):
@@ -128,10 +139,17 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         bgcolor: str = "grey",
         auto_add_default_plugins: bool = True,
     ):
-        self.app: app.Application = app.Application()
+        import frame_buffer_backend
+
+        self.app: app.Application = CustomApplication(
+            # backend_name="jupyter_rfb",
+            backend_name=frame_buffer_backend
+        )
 
         # Display the data
-        self.canvas = scene.SceneCanvas(title=title, keys="interactive", show=True)
+        self.canvas = scene.SceneCanvas(
+            title=title, keys="interactive", app=self.app, show=True
+        )
         self.view = self.canvas.central_widget.add_view()
         self.view.camera = "turntable"
         self.view.camera.aspect = 1
