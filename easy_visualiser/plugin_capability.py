@@ -49,8 +49,13 @@ class TriggerableMixin:
     def add_mapping(
         self,
         mapping: Union["ModalControl", "Mapping.MappingRawType"],
+        /,
+        *,
         front: bool = False,
     ):
+        from .modal_control import ensure_mapping
+
+        mapping = ensure_mapping(mapping)
         if front:
             self.__keys.insert(0, mapping)
         else:

@@ -21,6 +21,7 @@ class VisualisableImage(WidgetsMixin, VisualisablePlugin):
         cmap=None,
         # cmap="jet",
         on_mouse_callback=None,
+        normalise_on_mouse_callback=True,
     ):
         super().__init__()
         if widget_configs is None:
@@ -39,6 +40,7 @@ class VisualisableImage(WidgetsMixin, VisualisablePlugin):
                 image_kwargs["cmap"] = cmap
         self.image_kwargs = image_kwargs
         self.on_mouse_callback = on_mouse_callback
+        self.normalise_on_mouse_callback = normalise_on_mouse_callback
 
     def get_constructed_widgets(self):
         grid = scene.Grid()
@@ -68,6 +70,11 @@ class VisualisableImage(WidgetsMixin, VisualisablePlugin):
                     0 <= pos[1] < self.image_array.shape[0]
                     and 0 <= pos[0] < self.image_array.shape[1]
                 ):
-                    self.on_mouse_callback(self, pos[:2])
+                    pos = pos[:2]
+                    if self.normalise_on_mouse_callback:
+                        pos[0] = pos[0] / self.image_array.shape[1]
+                        pos[1] = pos[1] / self.image_array.shape[0]
+
+                    self.on_mouse_callback(self, pos)
 
         return grid, self.widget_configs

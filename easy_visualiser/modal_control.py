@@ -36,6 +36,24 @@ def mapping_to_one_line_string(mapping: Mapping) -> str:
     )
 
 
+def ensure_mapping(
+    data: Union[Mapping, Mapping.MappingRawType, "ModalControl"]
+) -> Mapping:
+    if isinstance(data, tuple):
+        mapping = Mapping(data[0], data[1], data[2])
+    elif isinstance(data, Mapping):
+        mapping = data
+    elif isinstance(data, ModalControl):
+        mapping = Mapping(
+            key=data.key,
+            description=f"Press {data.key} to control {data.modal_name}",
+            callback=ModalState.get_instance().create_set_state_callback(data),
+        )
+    else:
+        raise ValueError(f"Unknown data type {type(data)} for {data}")
+    return mapping
+
+
 class ModalControl(AbstractModalControl):
     def __init__(
         self,
@@ -46,19 +64,7 @@ class ModalControl(AbstractModalControl):
         self.key = Key(key)
         self._mappings: List[Mapping] = []
         for data in mappings:
-            if isinstance(data, tuple):
-                mapping = Mapping(data[0], data[1], data[2])
-            elif isinstance(data, Mapping):
-                mapping = data
-            elif isinstance(data, ModalControl):
-                mapping = Mapping(
-                    key=data.key,
-                    description=f"Press {data.key} to control {data.modal_name}",
-                    callback=ModalState.get_instance().create_set_state_callback(data),
-                )
-            else:
-                raise ValueError(f"Unknown data type {type(data)} for {data}")
-            self._mappings.append(mapping)
+            self._mappings.append(ensure_mapping(data))
         if any(ModalState.quit_key.match(data.key) for data in self.mappings):
             raise ValueError("[q] cannot be mapped!")
         self._modal_name = modal_name
