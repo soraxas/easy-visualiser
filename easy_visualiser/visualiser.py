@@ -132,6 +132,19 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
 
     __closing = ToggleableBool(False)
 
+    def get_frame(self):
+        return self.canvas._backend.get_frame()
+
+    def __spawn_async_loop(self):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+
+        # self.async_loop.set_debug(True)
+        asyncio.set_event_loop(loop)
+        return loop
+
     def __init__(
         self,
         title: str = "untitled",
@@ -139,12 +152,19 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         bgcolor: str = "grey",
         auto_add_default_plugins: bool = True,
     ):
+        super().__init__()
+        self.async_loop = self.__spawn_async_loop()
+
         import frame_buffer_backend
 
-        self.app: app.Application = CustomApplication(
-            # backend_name="jupyter_rfb",
-            backend_name=frame_buffer_backend
+        self.app: app.Application = app.Application(
+            # 'glfw',
         )
+        # self.app: app.Application = CustomApplication(
+        #     # backend_name="jupyter_rfb",
+        #     # backend_name='glfw'
+        #     backend_name=frame_buffer_backend
+        # )
 
         # Display the data
         self.canvas = scene.SceneCanvas(
@@ -172,14 +192,14 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         # self.async_loop = asyncio.get_event_loop()
         # self.async_loop.set_debug(True)
 
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-
-        self.async_loop = loop
-        # self.async_loop.set_debug(True)
-        asyncio.set_event_loop(self.async_loop)
+    #         self.canvas._backend.handle_event(
+    #     {
+    #         "event_type": "resize",
+    #         "width": 500,
+    #         "height": 500,
+    #         "pixel_ratio": 1,
+    #     }
+    # )
 
     def _initialise_new_plugins(self):
         assert self.initialised
@@ -307,6 +327,10 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
             self.hooks.on_visualiser_close.on_event()
             self.__closing.set(True)
             self.async_loop.stop()
+
+    @property
+    def alive(self):
+        return not self.__closing
 
     def __bool__(self):
         """Represent whether this visualiser is closing or not"""
@@ -440,7 +464,7 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
 
         async def core_processing():
             while self:
-                app.process_events()
+                self.spin_once()
                 self.interval_update()  # initial update
                 await asyncio.sleep(0.0001)
 
@@ -457,4 +481,4 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
             t.join()
 
     def spin_once(self):
-        app.process_events()
+        self.app.process_events()

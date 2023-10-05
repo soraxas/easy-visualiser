@@ -56,7 +56,7 @@ class CustomOffscreenContext(_offscreen_util.OffscreenContext):
                 self.glfw = glfw
 
         if self.glfw:
-            # self.glfw.init()
+            self.glfw.init()
             self.glfw.window_hint(self.glfw.VISIBLE, 0)
             self._canvas = self.glfw.create_window(1, 1, "dummy window", None, None)
         else:

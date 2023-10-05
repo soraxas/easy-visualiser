@@ -460,7 +460,7 @@ def initialize_program(**kwargs):
 
 def dpg_resize():
     print("resize", dpg.get_viewport_width(), dpg.get_viewport_height())
-
+    return
     global raw_data
     raw_data = np.zeros(
         [dpg.get_viewport_height() - 20, dpg.get_viewport_width() - 20, 4],
@@ -473,7 +473,98 @@ def dpg_resize():
     print("setting ok")
 
 
+import sys
+
+import glfw
 import numpy as np
+import tqdm
+
+
+class GlfwContextManager:
+    def __enter__(self):
+        self.__ctx = glfw.get_current_context()
+
+    def __exit__(self, *args):
+        glfw.make_context_current(self.__ctx)
+
+
+glfw_ctxmgr = GlfwContextManager()
+
+# print(glfw.get_current_context())
+# exit()
+
+from loguru import logger
+from soraxas_toolbox.image import display as D
+
+from easy_visualiser import Visualiser, spawn_local_visualiser
+
+logger.remove()
+logger.add(sys.stderr, level="INFO")
+# viz = spawn_local_visualiser()
+
+import threading
+
+
+class VisualiserThread:
+    def __init__(self) -> None:
+        x = threading.Thread(target=self.__thread_runner, args=(), daemon=True)
+        x.start()
+
+    def __thread_runner(self):
+        self.viz = Visualiser(
+            # auto_add_default_plugins=False
+        )
+        print("RUNNNNN")
+        self.viz.run()
+
+
+viz_thread = VisualiserThread()
+import time
+
+time.sleep(0.5)
+viz = viz_thread.viz
+# viz = Visualiser()
+
+
+# def thread_function(arg):
+#     while viz:
+#         # with glfw_ctxmgr:
+#         # viz.canvas._backend._context.make_current()
+
+#         viz.scatter(np.random.rand(N, 3).tolist())
+#         # # time.sleep(1)
+
+
+#         # # viz.spin_until_keypress()
+#         # # pbar.update()
+#         # # print(viz.canvas.get_frame())
+#         # # print(dir(viz.app))
+#         # # print(viz.canvas.CAN)
+#         # # print(type(viz.canvas.CAN))
+#         # # print(dir(viz.canvas._backend))
+#         # # print((viz.canvas._backend))
+#         # # print((viz.canvas._backend))
+#         # # print((viz.canvas._backend))
+#         # # asd
+#         # # print(viz.canvas._backend.get_frame())
+#         # D(viz.canvas._backend.get_frame())
+#         # continue
+#         raw_data[:]=(viz.get_frame().astype(float)/255)
+#         # raw_data[:]=(np.asarray(viz.get_frame()).reshape(500, 500, 4).astype(float)/255)
+#         # break
+# import threading
+
+# x = threading.Thread(target=thread_function, args=(1,), daemon=True)
+# x.start()
+
+# viz.canvas._backend.handle_event(
+#     {
+#         "event_type": "resize",
+#         "width": 500,
+#         "height": 500,
+#         "pixel_ratio": 1,
+#     }
+# )
 
 dpg.create_context()
 
@@ -493,22 +584,14 @@ try:
 
     import sys
 
-    from loguru import logger
-
-    from easy_visualiser import Visualiser, spawn_local_visualiser
-
-    logger.remove()
-    logger.add(sys.stderr, level="INFO")
-    # viz = spawn_local_visualiser()
-    viz = Visualiser()
-
-    import numpy as np
-    import tqdm
-    from soraxas_toolbox.image import display as D
-
     N = 20
-
+    i = 0
     while dpg.is_dearpygui_running():
+        i += 1
+
+        viz_thread.viz.scatter(np.random.rand(N, 3).tolist())
+        viz_thread.viz.get_frame()
+
         # Start and stop the video stream
         # if dpg.is_item_clicked("BtnStart"):
         #     run = 1
@@ -519,44 +602,50 @@ try:
         # stream()
         # raw_data[:] = np.random.rand(*raw_data.shape)
 
-        with tqdm.tqdm() as pbar:
-            print(
-                viz.canvas._backend.handle_event(
-                    {
-                        "event_type": "resize",
-                        "width": 500,
-                        "height": 500,
-                        "pixel_ratio": 1,
-                    }
-                )
-            )
+        # if i > 50:
+        # with tqdm.tqdm() as pbar:
+        # print(
+        #     viz.canvas._backend.handle_event(
+        #         {
+        #             "event_type": "resize",
+        #             "width": 500,
+        #             "height": 500,
+        #             "pixel_ratio": 1,
+        #         }
+        #     )
+        # )
 
-            while viz:
-                viz.scatter(np.random.rand(N, 3).tolist())
-                # time.sleep(1)
+        # while viz:
+        #     # with glfw_ctxmgr:
+        #     # viz.canvas._backend._context.make_current()
 
-                # viz.spin_until_keypress()
-                pbar.update()
-                # print(viz.canvas.get_frame())
-                # print(dir(viz.app))
-                # print(viz.canvas.CAN)
-                # print(type(viz.canvas.CAN))
-                # print(dir(viz.canvas._backend))
-                # print((viz.canvas._backend))
-                # print((viz.canvas._backend))
-                # print((viz.canvas._backend))
-                # asd
-                D(viz.canvas._backend.get_frame())
-                break
+        #     # viz.scatter(np.random.rand(N, 3).tolist())
+        #     # # time.sleep(1)
 
-                # print(dir(viz.app._backend))
+        #     # # viz.spin_until_keypress()
+        #     # # pbar.update()
+        #     # # print(viz.canvas.get_frame())
+        #     # # print(dir(viz.app))
+        #     # # print(viz.canvas.CAN)
+        #     # # print(type(viz.canvas.CAN))
+        #     # # print(dir(viz.canvas._backend))
+        #     # # print((viz.canvas._backend))
+        #     # # print((viz.canvas._backend))
+        #     # # print((viz.canvas._backend))
+        #     # # asd
+        #     # # print(viz.canvas._backend.get_frame())
+        #     # D(viz.canvas._backend.get_frame())
+        #     raw_data[:]=(np.asarray(viz.get_frame()).reshape(500, 500, 4).astype(float)/255)
+        #     break
+
+        # print(dir(viz.app._backend))
 
         # print(raw_data)
         # print(viz.canvas.CAN.get_frame())
         # print(raw_data.shape)
         # print(viz.canvas.CAN.get_frame().shape)
 
-        raw_data[:] = viz.canvas._backend.get_frame().astype(np.float32) / 255
+        # raw_data[:] = viz.canvas._backend.get_frame().astype(np.float32) / 255
 
         dpg.render_dearpygui_frame()
 except Exception:
@@ -571,7 +660,7 @@ import sys
 
 from loguru import logger
 
-from easy_visualiser.input.remote_socket import RemoteControlProxyDatasource
+from easy_visualiser.proxy.remote_socket import RemoteControlProxyDatasource
 
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
