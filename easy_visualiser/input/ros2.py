@@ -21,6 +21,7 @@ class Ros2Comm(DataSourceSingleton):
 
         self.subscribers = []
         self.subscribed_topics = []
+        self.visualiser.hooks.on_visualiser_close.add_hook(rclpy.shutdown)
 
     def _init_node(self):
         # use disable_signals if initialising node in a background thread
