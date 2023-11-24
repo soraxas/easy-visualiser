@@ -5,7 +5,7 @@ from easy_visualiser.modal_control import ModalControl
 from easy_visualiser.modded_components import MarkerWithModifiablePos
 from easy_visualiser.plugin_capability import TriggerableMixin
 from easy_visualiser.plugins import VisualisablePlugin
-from easy_visualiser.utils import ScalableFloat
+from easy_visualiser.utils import ScalableFloat, no_except
 from easy_visualiser.utils.dummy import DUMMY_POINTS
 
 
@@ -121,4 +121,5 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
             self.points_visual.set_data(*args, **kwargs)
 
         if not self.had_set_range:
-            self.set_range()
+            with no_except.NoMyException(TypeError):
+                self.set_range()
