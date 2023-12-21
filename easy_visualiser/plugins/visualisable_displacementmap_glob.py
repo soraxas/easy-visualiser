@@ -57,4 +57,4 @@ class VisualisableDisplacementMapLoopWithGlob(
         self.points_visual.update_data(colors=colours)
 
         # update status
-        self.other_plugins.VisualisableStatusBar.update_status()
+        self.other_plugins.VisualisableAutoStatusBar.update_status()
