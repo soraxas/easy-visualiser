@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="easy-visualiser",
-    version="0.1.0",
+    version="0.1.1",
     author="Tin Lai",
     author_email="oscar@tinyiu.com",
     description="Pluggable visualiser",
@@ -32,7 +32,8 @@ setuptools.setup(
         "vispy",
         "pyqt6",
         "typed-argument-parser",
-        "msgx",
+        "msgx==1.0.3",
+        "pillow",
     ],
     python_requires=">=3.7",
 )
