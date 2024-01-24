@@ -1,7 +1,8 @@
 from abc import ABC
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Callable, List, Optional, Type
 
 import overrides
+from vispy.visuals import Visual
 
 from easy_visualiser.plugin_capability import (
     GuardableMixin,
@@ -16,16 +17,38 @@ if TYPE_CHECKING:
 class VisualisablePlugin(ABC):
     visualiser: "Visualiser" = None
     name: str
+    auto_add_visual_parent: bool = True
+    assign_visual_parent_on_init: List[Callable] = []
     __had_set_range: bool = False
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        auto_add_visual_parent: bool = True,
+    ):
         super().__init__()
+
         self.state = PluginState.EMPTY
+        self.auto_add_visual_parent = auto_add_visual_parent
 
         if not hasattr(self, "name"):
             if name is None:
                 name = self.__class__.__name__
             self.name = name
+
+    def __setattr__(self, key, value):
+        # auto add our visualiser's parent as the visual's parent.
+        if self.auto_add_visual_parent and isinstance(value, Visual):
+            assert hasattr(value, "parent")
+
+            if value.parent is None:
+                if self.visualiser is None:
+                    # assign it later.
+                    self.assign_visual_parent_on_init.append(value)
+                else:
+                    value.parent = self.visualiser.visual_parent
+
+        return super().__setattr__(key, value)
 
     def on_initialisation(self, visualiser: "Visualiser"):
         """
@@ -33,6 +56,10 @@ class VisualisablePlugin(ABC):
         :return:
         """
         self.visualiser = visualiser
+        # process callback on init.
+        for visual in self.assign_visual_parent_on_init:
+            visual.parent = self.visualiser.visual_parent
+        self.assign_visual_parent_on_init.clear()
 
     @property
     def other_plugins(self) -> "VisualisablePluginNameSpace":

@@ -10,8 +10,8 @@ from easy_visualiser.modded_components import LockedPanZoomCamera, SyncedPanZoom
 from easy_visualiser.plugin_capability import TriggerableMixin, WidgetOption
 from easy_visualiser.plugins import (
     Visualisable2DLinePlot,
+    VisualisableAutoStatusBar,
     VisualisableImage,
-    VisualisableStatusBar,
     VisualisableVolumePlot,
 )
 from easy_visualiser.utils import boolean_to_onoff
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         VisualisableVolumePlot(np.flipud(np.rollaxis(sound_speed, 1)))
     )
     visualiser.register_plugin(
-        VisualisableStatusBar(
+        VisualisableAutoStatusBar(
             widget_option=WidgetOption(
                 row=1,
                 col=1,

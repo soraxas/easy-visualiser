@@ -16,14 +16,17 @@ if TYPE_CHECKING:
 class VisualiserMiscsMixin(ABC):
     def get_existing_or_construct(
         self: "Visualiser",
-        plugin_type: Type["VisualisablePlugin"],
+        *args,
         name: str = None,
+        plugin_type: Type["VisualisablePlugin"] = None,
         **kwargs,
     ) -> VisualisablePlugin:
+        if plugin_type is None:
+            raise ValueError("Argument 'plugin_type' must be provided.")
         name = name or f"_default__{plugin_type.__name__}"
 
         if name not in self.plugins:
-            self.register_plugin(plugin_type(**kwargs), name=name)
+            self.register_plugin(plugin_type(*args, **kwargs), name=name)
         return self.plugins[name]
 
 

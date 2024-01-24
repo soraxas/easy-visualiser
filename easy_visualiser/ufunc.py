@@ -237,3 +237,33 @@ class PlottingUFuncMixin(ABC):
             plugin_type=VisualisableLine,
             name=name,
         ).set_line(pos=pos, *args, **kwargs)
+
+    def imshow(
+        self: "Visualiser",
+        image,
+        *args,
+        name: str = None,
+        connect: str = "strip",
+        width: int = 5,
+        color: str = "red",
+        **kwargs,
+    ):
+        image = ensure_nparray(image)
+
+        # kwargs.update(
+        #     dict(
+        #     widget_configs=dict(col=0, row=0, col_span=5, row_span=2),
+        #     )
+        # )
+
+        from .plugins import VisualisableImage
+
+        _plug = self.get_existing_or_construct(
+            # image,
+            plugin_type=VisualisableImage,
+            name=name,
+            #
+            panzoom_lock=False,
+        )
+
+        _plug.set_image(image, *args, **kwargs)

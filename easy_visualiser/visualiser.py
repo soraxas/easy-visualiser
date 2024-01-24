@@ -17,11 +17,11 @@ from .plugin_capability import (
     WidgetsMixin,
 )
 from .plugins import (
+    VisualisableAutoStatusBar,
     VisualisableGridLines,
     VisualisablePlugin,
     VisualisablePluginInitialisationError,
     VisualisablePrincipleAxis,
-    VisualisableStatusBar,
 )
 from .utils import ToggleableBool, topological_sort
 from .visualiser_miscs import VisualiserEasyAccesserMixin, VisualiserMiscsMixin
@@ -64,11 +64,13 @@ class VisualiserHooks:
     on_initialisation_finish: HookList
     on_keypress_finish: HookList
     on_visualiser_close: HookList
+    on_interval_update: HookList
 
     def __init__(self):
         self.on_initialisation_finish = HookList()
         self.on_keypress_finish = HookList()
         self.on_visualiser_close = HookList()
+        self.on_interval_update = HookList()
 
     @property
     def on_plugins_state_change(self) -> HookList:
@@ -104,6 +106,7 @@ class VisualisablePluginNameSpace(SimpleNamespace):
         self.__dict__[plugin.name] = plugin
 
 
+from .modal_control import Key
 from .ufunc import PlottingUFuncMixin
 
 
@@ -116,10 +119,14 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
     # raw registered plugin list
     _registered_plugins: List[Tuple[VisualisablePlugin, Set[str]]] = []
     _registered_datasources: List[DataSource] = []
+    _registered_keypress_cb: List[Tuple[Key, Callable]] = []
     # sorted version
     # plugins: List[VisualisablePlugin] = []
 
     __closing = ToggleableBool(False)
+
+    def register_keypress(self, key: str, callback: Callable):
+        self._registered_keypress_cb.append((Key(key), callback))
 
     def __init__(
         self,
@@ -127,13 +134,14 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         grid_margin: float = 0,
         bgcolor: str = "grey",
         auto_add_default_plugins: bool = True,
+        type: str = "3D",
     ):
         self.app: app.Application = app.Application()
 
         # Display the data
         self.canvas = scene.SceneCanvas(title=title, keys="interactive", show=True)
         self.view = self.canvas.central_widget.add_view()
-        self.view.camera = "turntable"
+        self.view.camera = "turntable" if type == "3D" else "panzoom"
         self.view.camera.aspect = 1
         self.view.bgcolor = bgcolor
         self.auto_add_default_plugins = auto_add_default_plugins
@@ -261,7 +269,10 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         @self.canvas.connect
         def on_key_press(ev):
             def process():
-                # print(ev.key.name)
+                for key, cb in self._registered_keypress_cb:
+                    if key.match(ev.key.name):
+                        return cb(ev)
+
                 for _plugin in (
                     p for p in self.plugins if isinstance(p, TriggerableMixin)
                 ):
@@ -325,6 +336,8 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         for plugin in self.plugins:
             if plugin.state is PluginState.ON:
                 plugin.update()
+        # TODO: move the above into using hooks.
+        self.hooks.on_interval_update.on_event()
 
         # ##############################
         # self.async_loop.stop()
@@ -403,7 +416,7 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
         for default_plugin_cls in [
             VisualisablePrincipleAxis,
             VisualisableGridLines,
-            VisualisableStatusBar,
+            VisualisableAutoStatusBar,
         ]:
             if not any(
                 type(p) == default_plugin_cls for p, _ in self._registered_plugins

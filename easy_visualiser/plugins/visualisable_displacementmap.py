@@ -68,7 +68,7 @@ class VisualisableDisplacementMap(ToggleableMixin, VisualisablePoints):
     ) -> bool:
         cmap = get_colormap("jet")
         colours = cmap.map(map_array_to_0_1(self.z_data))
-        super().construct_plugin(face_color=colours, **kwargs)
+        VisualisablePoints.construct_plugin(self, face_color=colours, **kwargs)
         self.set_antialias(0.05)
 
         return True

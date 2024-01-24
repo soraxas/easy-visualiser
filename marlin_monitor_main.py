@@ -12,7 +12,7 @@ from easy_visualiser.plugins.ext import (
 )
 from easy_visualiser.plugins.ext.visualisable_moos_swarm import SwarmModelType
 from easy_visualiser.plugins.functional_zscaler import AxisScalerPlugin
-from easy_visualiser.plugins.visualisable_status_bar import VisualisableStatusBar
+from easy_visualiser.plugins.visualisable_status_bar import VisualisableAutoStatusBar
 from easy_visualiser.utils import ToggleableBool
 from easy_visualiser.visualiser import Visualiser
 
@@ -65,7 +65,7 @@ def run():
         title="pGlobalPlanner Plan Visualiser",
     )
     visualiser.register_plugin(AxisScalerPlugin(args.z_scale_factor, name="zscaler"))
-    visualiser.register_plugin(VisualisableStatusBar())
+    visualiser.register_plugin(VisualisableAutoStatusBar())
     visualiser.register_plugin(
         VisualisableBathy(
             bathy_toggle=args.bathymetry,

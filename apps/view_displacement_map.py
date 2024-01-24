@@ -10,7 +10,7 @@ from easy_visualiser.plugins.visualisable_displacementmap_glob import (
     VisualisableDisplacementMapLoopWithGlob,
 )
 from easy_visualiser.plugins.visualisable_mesh import VisualisableMesh
-from easy_visualiser.plugins.visualisable_status_bar import VisualisableStatusBar
+from easy_visualiser.plugins.visualisable_status_bar import VisualisableAutoStatusBar
 from easy_visualiser.utils.triggerable_utils import (
     move_triggerable_plugin_keys_to_nested_modal_control,
 )
@@ -36,7 +36,7 @@ def run():
     visualiser = Visualiser(
         title="Displacement Map Visualiser",
     )
-    visualiser.register_plugin(VisualisableStatusBar())
+    visualiser.register_plugin(VisualisableAutoStatusBar())
     if args.glob:
         displacement_plugin = VisualisableDisplacementMapLoopWithGlob(args.image_path)
         visualiser.register_plugin(displacement_plugin)
