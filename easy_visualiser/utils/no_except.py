@@ -26,6 +26,10 @@ class ContextManager(metaclass=abc.ABCMeta):
         return self.__cm.__exit__(exc_type, exc_value, traceback)
 
 
+class ExceptionAsWarning(UserWarning):
+    pass
+
+
 class NoAllException(ContextManager):
     def __init__(self):
         super().__init__()
@@ -35,7 +39,7 @@ class NoAllException(ContextManager):
         try:
             yield
         except ModuleNotFoundError as e:
-            warnings.warn(str(e), UserWarning)
+            warnings.warn(str(e), ExceptionAsWarning)
 
 
 class NoMyException(ContextManager):
@@ -48,4 +52,4 @@ class NoMyException(ContextManager):
         try:
             yield
         except self.ExceptionType as e:
-            warnings.warn(str(e), UserWarning)
+            warnings.warn(str(e), ExceptionAsWarning)
