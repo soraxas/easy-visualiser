@@ -9,6 +9,7 @@ from easy_visualiser.plugin_capability import (
     IntervalUpdatableMixin,
     PluginState,
 )
+from easy_visualiser.utils import no_except
 
 if TYPE_CHECKING:
     from easy_visualiser.visualiser import VisualisablePluginNameSpace, Visualiser
@@ -81,8 +82,9 @@ class VisualisablePlugin(ABC):
         return True
 
     def set_range(self, *args, **kwargs):
-        self.visualiser.view.camera.set_range(*args, **kwargs)
-        self.__class__.__had_set_range = True
+        with no_except.NoMyException(TypeError):
+            self.visualiser.view.camera.set_range(*args, **kwargs)
+            self.__class__.__had_set_range = True
 
     @property
     def had_set_range(self) -> bool:
