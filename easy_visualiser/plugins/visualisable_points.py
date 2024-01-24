@@ -5,7 +5,7 @@ from easy_visualiser.modal_control import ModalControl
 from easy_visualiser.modded_components import MarkerWithModifiablePos
 from easy_visualiser.plugin_capability import TriggerableMixin
 from easy_visualiser.plugins import VisualisablePlugin
-from easy_visualiser.utils import ScalableFloat, no_except
+from easy_visualiser.utils import ScalableFloat
 from easy_visualiser.utils.dummy import DUMMY_POINTS
 
 
@@ -22,55 +22,55 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
         self._antialias = ScalableFloat(0.25, upper_bound=10)
         self._cached_plotting_kwargs = dict()
 
-        self.add_mappings(
-            ModalControl(
-                "m",
-                [
-                    MappingOnlyDisplayText(
-                        lambda: f"marker size: {float(self._marker_scale):.2f}"
-                    ),
-                    Mapping(
-                        Key.Plus,
-                        "Increase marker size",
-                        lambda: self._marker_scale.scale(1.25)
-                        and self.points_visual.update_data(
-                            size=float(self._marker_scale)
-                        ),
-                    ),
-                    Mapping(
-                        Key.Minus,
-                        "Decrease marker size",
-                        lambda: self._marker_scale.scale(1 / 1.25)
-                        and self.points_visual.update_data(
-                            size=float(self._marker_scale)
-                        ),
-                    ),
-                ],
-                "Marker",
-            ),
-            ModalControl(
-                "a",
-                [
-                    MappingOnlyDisplayText(
-                        lambda: f"antialias: {float(self._antialias):.4f}"
-                    ),
-                    Mapping(
-                        Key.Plus,
-                        "Increase antialias",
-                        lambda: self._antialias.scale(1.25)
-                        and self.set_antialias(self._antialias),
-                    ),
-                    Mapping(
-                        Key.Minus,
-                        "Decrease antialias",
-                        lambda: self._antialias.scale(1 / 1.25)
-                        and self.set_antialias(self._antialias),
-                    ),
-                ],
-                "Anti-alias",
-            ),
-            Mapping("z", "reset zoom", lambda: self.set_range()),
-        )
+        # self.add_mappings(
+        #     ModalControl(
+        #         "m",
+        #         [
+        #             MappingOnlyDisplayText(
+        #                 lambda: f"marker size: {float(self._marker_scale):.2f}"
+        #             ),
+        #             Mapping(
+        #                 Key.Plus,
+        #                 "Increase marker size",
+        #                 lambda: self._marker_scale.scale(1.25)
+        #                 and self.points_visual.update_data(
+        #                     size=float(self._marker_scale)
+        #                 ),
+        #             ),
+        #             Mapping(
+        #                 Key.Minus,
+        #                 "Decrease marker size",
+        #                 lambda: self._marker_scale.scale(1 / 1.25)
+        #                 and self.points_visual.update_data(
+        #                     size=float(self._marker_scale)
+        #                 ),
+        #             ),
+        #         ],
+        #         "Marker",
+        #     ),
+        #     ModalControl(
+        #         "a",
+        #         [
+        #             MappingOnlyDisplayText(
+        #                 lambda: f"antialias: {float(self._antialias):.4f}"
+        #             ),
+        #             Mapping(
+        #                 Key.Plus,
+        #                 "Increase antialias",
+        #                 lambda: self._antialias.scale(1.25)
+        #                 and self.set_antialias(self._antialias),
+        #             ),
+        #             Mapping(
+        #                 Key.Minus,
+        #                 "Decrease antialias",
+        #                 lambda: self._antialias.scale(1 / 1.25)
+        #                 and self.set_antialias(self._antialias),
+        #             ),
+        #         ],
+        #         "Anti-alias",
+        #     ),
+        #     Mapping("z", "reset zoom", lambda: self.set_range()),
+        # )
         self.point_data = points
 
     def set_antialias(self, value):
@@ -121,5 +121,4 @@ class VisualisablePoints(TriggerableMixin, VisualisablePlugin):
             self.points_visual.set_data(*args, **kwargs)
 
         if not self.had_set_range:
-            with no_except.NoMyException(TypeError):
-                self.set_range()
+            self.set_range()
