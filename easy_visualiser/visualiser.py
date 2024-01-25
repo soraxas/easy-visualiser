@@ -125,6 +125,8 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
 
     __closing = ToggleableBool(False)
 
+    async_yield_sleep_time: float = 1e-6
+
     def register_keypress(self, key: str, callback: Callable):
         self._registered_keypress_cb.append((Key(key), callback))
 
@@ -427,6 +429,9 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
                 # different than the default class, so we will still add the default.
                 self.register_plugin(default_plugin_cls())
 
+    async def async_yield(self):
+        await asyncio.sleep(self.async_yield_sleep_time)
+
     def run(self, regular_update_interval: Optional[float] = None):
         """
         The main function to start the visualisation window after everything had been
@@ -437,7 +442,7 @@ class Visualiser(PlottingUFuncMixin, VisualiserMiscsMixin, VisualiserEasyAccesse
             while self:
                 app.process_events()
                 self.interval_update()  # initial update
-                await asyncio.sleep(0.0001)
+                await self.async_yield()
 
         # loop = asyncio.get_event_loop() # Here
         # loop = asyncio.new_event_loop()

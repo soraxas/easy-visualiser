@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Type
 
 import rclpy
+import numpy as np
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 
@@ -11,7 +12,23 @@ from . import DataSourceSingleton
 
 
 class Ros2Comm(DataSourceSingleton):
-    initialised = False
+    _process_n_messages_every_tick: int = None
+
+    @property
+    def process_n_messages_every_tick(self):
+        """
+        If this attribute is not set, we auto scale it based on currently
+        subscribed topics.
+        When there are more subscripted topics, we often needs to process more
+        as there are more queued messages.
+        """
+        if self._process_n_messages_every_tick is None:
+            return np.clip(len(self.subscribers), a_min=10, a_max=100)
+        return self._process_n_messages_every_tick
+
+    @process_n_messages_every_tick.setter
+    def process_n_messages_every_tick(self, val: int):
+        self._process_n_messages_every_tick = val
 
     def __init__(self):
         super().__init__()
@@ -20,37 +37,24 @@ class Ros2Comm(DataSourceSingleton):
         ######################################
         self.callbacks_on_new_topics = []
         self.seen_topics = None
+        ######################################
 
     def construct_plugin(self):
         # # initialise in a background thread
         rclpy.init()
-
         self.ros_interface = Node("easy_visualiser_ros2_comm")
 
-        pool = ThreadPoolExecutor()
-        pool.submit(self._init_node)
+        async def async_processing():
+            while self:
+                for i in range(self.process_n_messages_every_tick):
+                    rclpy.spin_once(
+                        self.ros_interface,
+                        timeout_sec=self.visualiser.async_yield_sleep_time,
+                    )
+                await self.visualiser.async_yield()
 
+        self.visualiser.async_loop.create_task(async_processing())
         self.visualiser.hooks.on_visualiser_close.add_hook(rclpy.shutdown)
-
-    def _init_node(self):
-        # use disable_signals if initialising node in a background thread
-        try:
-            pass
-        finally:
-            # return
-            rclpy.spin(self.ros_interface)
-
-            # # return
-            # executor = SingleThreadedExecutor()
-            # executor.add_node(self.ros_interface)
-            # # while True:
-            # #     # executor.spin_once()
-            # #     print('.')
-            # #     print()
-
-            # executor.shutdown()
-            self.ros_interface.destroy_node()
-            rclpy.shutdown()
 
     def __subscribe(self, datapack):
         # this is the actual subscribe function, without storing things in it
