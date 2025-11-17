@@ -163,12 +163,10 @@ class EasyVisualiserClientProxy:
         self.visualiser_server = Pyro5.api.Proxy(self.uri)
 
     @as_proxy(Visualiser.scatter)
-    def scatter(self):
-        ...
+    def scatter(self): ...
 
     @as_proxy(Visualiser.plot)
-    def plot(self):
-        ...
+    def plot(self): ...
 
     def __getattr__(self, name):
         try:

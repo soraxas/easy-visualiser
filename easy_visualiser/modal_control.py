@@ -37,7 +37,7 @@ def mapping_to_one_line_string(mapping: Mapping) -> str:
 
 
 def ensure_mapping(
-    data: Union[Mapping, Mapping.MappingRawType, "ModalControl"]
+    data: Union[Mapping, Mapping.MappingRawType, "ModalControl"],
 ) -> Mapping:
     if isinstance(data, tuple):
         mapping = Mapping(data[0], data[1], data[2])
