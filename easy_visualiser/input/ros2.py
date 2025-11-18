@@ -1,8 +1,7 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Type
 
-import rclpy
 import numpy as np
+import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 

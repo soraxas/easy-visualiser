@@ -121,9 +121,9 @@ class AggregatorBackendComposite(AbstractAggregatorBackend):
         for item in aggregator.values():
             nrow = infer_num_rows(item)
             if item.dirty:
-                aggregator._cached_container[
-                    i : i + nrow, :
-                ] = item.retrieve_for_build()
+                aggregator._cached_container[i : i + nrow, :] = (
+                    item.retrieve_for_build()
+                )
             i += nrow
 
 

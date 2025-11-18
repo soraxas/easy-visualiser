@@ -96,8 +96,7 @@ class MarkerWithModifiablePos(visuals.Markers):
         light_position=(1, -1, 1),
         light_ambient=0.3,
         **kwargs,
-    ):
-        ...
+    ): ...
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,8 +112,7 @@ class MarkerWithModifiablePos(visuals.Markers):
         face_color="white",
         symbol=None,
         scaling=None,
-    ):
-        ...
+    ): ...
 
     def set_data(self, *args, **kwargs):
         super().set_data(*args, **kwargs)
